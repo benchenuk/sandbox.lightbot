@@ -1,0 +1,57 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "LightBot",
+  "version": "0.1.0",
+  "identifier": "com.lightbot.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "LightBot",
+        "width": 800,
+        "height": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "visible": false,
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": false,
+        "center": true,
+        "shadow": true
+      }
+    ],
+    "security": {
+      "csp": null,
+      "capabilities": ["default"]
+    },
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": true
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "app"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": [],
+    "externalBin": ["bin/python-sidecar"],
+    "copyright": "",
+    "category": "DeveloperTool",
+    "shortDescription": "Lightweight AI Chat Bot",
+    "longDescription": "A native MacOS desktop application for personal AI chat with web search capabilities"
+  }
+}

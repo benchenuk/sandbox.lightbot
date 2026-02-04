@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="100" fill="#0d0d0d"/>
+  
+  <!-- Terminal Window -->
+  <rect x="60" y="60" width="392" height="392" rx="20" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="4"/>
+  
+  <!-- Window Controls -->
+  <circle cx="110" cy="110" r="12" fill="#ff5f56"/>
+  <circle cx="150" cy="110" r="12" fill="#ffbd2e"/>
+  <circle cx="190" cy="110" r="12" fill="#27c93f"/>
+  
+  <!-- Prompt Symbol -->
+  <text x="120" y="280" font-family="JetBrains Mono, monospace" font-size="120" fill="#00d4aa" font-weight="bold">&gt;_</text>
+  
+  <!-- Search Icon (magnifying glass) -->
+  <circle cx="340" cy="340" r="50" fill="none" stroke="#5c7aea" stroke-width="20"/>
+  <line x1="375" y1="375" x2="420" y2="420" stroke="#5c7aea" stroke-width="20" stroke-linecap="round"/>
+</svg>

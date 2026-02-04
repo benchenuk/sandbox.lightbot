@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv
+
+# build
+*target/
+
+# PyInstaller / Bundled Binaries
+*.spec
+src-tauri/bin/python-sidecar*
+
+# Local
+.DS_Store

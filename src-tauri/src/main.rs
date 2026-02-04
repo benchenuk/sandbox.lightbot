@@ -1,0 +1,233 @@
+use std::process::Child;
+use std::sync::{Arc, Mutex};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::TrayIconBuilder;
+use tauri::{Emitter, Manager, Runtime};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+
+struct SidecarState {
+    port: Mutex<u16>,
+    error: Mutex<Option<String>>,
+}
+
+fn toggle_window_visibility<R: Runtime>(app: &tauri::AppHandle<R>) {
+    if let Some(window) = app.get_webview_window("main") {
+        if window.is_visible().unwrap_or(false) {
+            let _ = window.hide();
+        } else {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    }
+}
+
+fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
+    let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+    let hide_i = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>)?;
+    let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let separator = PredefinedMenuItem::separator(app)?;
+
+    let menu = Menu::with_items(app, &[&show_i, &hide_i, &separator, &quit_i])?;
+
+    let icon = app.default_window_icon().cloned().expect("Failed to get default window icon. Please ensure icons are generated.");
+
+    let _tray = TrayIconBuilder::new()
+        .icon(icon)
+        .menu(&menu)
+        .on_menu_event(|app, event| {
+            let event_id = event.id.as_ref();
+            if event_id == "show" {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            } else if event_id == "hide" {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
+                }
+            } else if event_id == "quit" {
+                app.exit(0);
+            }
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let tauri::tray::TrayIconEvent::Click { .. } = event {
+                toggle_window_visibility(tray.app_handle());
+            }
+        })
+        .build(app)?;
+
+    Ok(())
+}
+
+fn setup_global_hotkey<R: Runtime>(app: &tauri::AppHandle<R>) -> Result<(), Box<dyn std::error::Error>> {
+    // Command+Shift+O as default hotkey
+    let shortcut: Shortcut = "Command+Shift+O".parse().expect("Invalid shortcut");
+
+    app.global_shortcut()
+        .on_shortcut(shortcut, move |app, _shortcut, _event| {
+            toggle_window_visibility(app);
+        })?;
+
+    Ok(())
+}
+
+async fn spawn_python_sidecar<R: Runtime>(
+    app: &tauri::AppHandle<R>,
+) -> Result<(Child, u16), String> {
+    // Find an available port
+    let port = portpicker::pick_unused_port().ok_or("No available port")?;
+
+    // Detect current target triple for bundled sidecar
+    let arch = if cfg!(target_arch = "aarch64") { "aarch64" } else { "x86_64" };
+    let triple = format!("{}-apple-darwin", arch);
+    let sidecar_with_triple = format!("python-sidecar-{}", triple);
+
+    // Try multiple possible paths for the sidecar binary
+    let mut possible_paths = vec![
+        // Bundled paths (with and without triple)
+        app.path().resolve(format!("bin/{}", sidecar_with_triple), tauri::path::BaseDirectory::Resource).ok(),
+        app.path().resolve("bin/python-sidecar", tauri::path::BaseDirectory::Resource).ok(),
+        
+        // Development paths (relative to app directory)
+        app.path().resolve(format!("src-tauri/bin/{}", sidecar_with_triple), tauri::path::BaseDirectory::AppConfig).ok(),
+        app.path().resolve("src-tauri/bin/python-sidecar", tauri::path::BaseDirectory::AppConfig).ok(),
+    ];
+
+    // Add some direct relative paths as fallback for dev
+    possible_paths.push(Some(std::path::PathBuf::from(format!("src-tauri/bin/{}", sidecar_with_triple))));
+    possible_paths.push(Some(std::path::PathBuf::from("src-tauri/bin/python-sidecar")));
+    possible_paths.push(Some(std::path::PathBuf::from(format!("bin/{}", sidecar_with_triple))));
+    possible_paths.push(Some(std::path::PathBuf::from("bin/python-sidecar")));
+
+    let mut sidecar_path = None;
+    for path in possible_paths.into_iter().flatten() {
+        if path.exists() {
+            sidecar_path = Some(path);
+            break;
+        }
+    }
+
+    let sidecar_path = sidecar_path.ok_or_else(|| {
+        format!("Python sidecar binary not found. Please run ./scripts/build-sidecar.sh. Expected: src-tauri/bin/{}", sidecar_with_triple)
+    })?;
+
+    println!("Spawning Python sidecar from: {:?}", sidecar_path);
+
+    // Spawn the Python sidecar process
+    let mut command = std::process::Command::new(sidecar_path);
+    command.arg("--port").arg(port.to_string());
+
+    #[cfg(target_os = "macos")]
+    {
+        command.env("PYTHONUNBUFFERED", "1");
+    }
+
+    let child = command
+        .spawn()
+        .map_err(|e| format!("Failed to spawn sidecar: {}", e))?;
+
+    // Wait a bit for the server to start
+    tokio::time::sleep(tokio::time::Duration::from_millis(1500)).await;
+
+    // Verify the server is running
+    let client = reqwest::Client::new();
+    let health_url = format!("http://127.0.0.1:{}/health", port);
+
+    let mut retries = 15;
+    while retries > 0 {
+        match client.get(&health_url).timeout(std::time::Duration::from_secs(2)).send().await {
+            Ok(resp) if resp.status().is_success() => {
+                println!("Python sidecar is healthy on port {}", port);
+                return Ok((child, port));
+            }
+            _ => {
+                retries -= 1;
+                if retries == 0 {
+                    return Err("Sidecar health check failed - server started but /health not responding".to_string());
+                }
+                tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+            }
+        }
+    }
+
+    Err("Failed to start sidecar".to_string())
+}
+
+#[tauri::command]
+fn get_sidecar_status(state: tauri::State<SidecarState>) -> Result<u16, String> {
+    let port = *state.port.lock().unwrap();
+    if port > 0 {
+        Ok(port)
+    } else {
+        let error = state.error.lock().unwrap();
+        Err(error.clone().unwrap_or_else(|| "Sidecar not started yet".to_string()))
+    }
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .manage(SidecarState {
+            port: Mutex::new(0),
+            error: Mutex::new(None),
+        })
+        .invoke_handler(tauri::generate_handler![get_sidecar_status])
+        .setup(|app| {
+            // Setup system tray
+            setup_system_tray(app.handle())?;
+
+            // Setup global hotkey
+            let _ = setup_global_hotkey(app.handle());
+
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                match spawn_python_sidecar(&app_handle).await {
+                    Ok((_child, port)) => {
+                        println!("Python sidecar started on port {}", port);
+                        
+                        // Store the port in state
+                        let state = app_handle.state::<SidecarState>();
+                        *state.port.lock().unwrap() = port;
+                        
+                        // Emit event to frontend that sidecar is ready
+                        let _ = app_handle.emit("sidecar-ready", port);
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to start Python sidecar: {}", e);
+                        
+                        // Store the error in state
+                        let state = app_handle.state::<SidecarState>();
+                        *state.error.lock().unwrap() = Some(e.clone());
+                        
+                        let _ = app_handle.emit("sidecar-error", e);
+                    }
+                }
+            });
+
+            // Show the main window once everything is set up
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+
+            Ok(())
+        })
+        .on_window_event(|app, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // Hide window instead of closing (keep running in tray)
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
+                }
+                api.prevent_close();
+            }
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+
+fn main() {
+    run()
+}

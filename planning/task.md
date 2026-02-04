@@ -1,0 +1,31 @@
+# Task List for Tauri + Python AI Chat Bot
+
+- [ ] Project Initialization and Planning
+    - [x] Explore existing workspace and clean up if necessary
+    - [x] Create detailed `implementation_plan.md`
+    - [x] Submit plan for user review
+- [x] Skeleton Application Setup ✅ COMPLETE
+    - [x] Initialize Tauri v2 project
+    - [x] Set up Python sidecar environment (Conda/Venv)
+    - [x] Implement basic IPC between Tauri (frontend/Rust) and Python
+    - [x] Implement System Tray & Global Hotkey (Rust)
+    - [x] React + Vite + Tailwind frontend
+    - [x] TUI-style UI components
+    - [x] Settings panel
+    - [x] FastAPI Python sidecar skeleton
+    - [ ] Build Python sidecar binary (PyInstaller)
+    - [ ] Generate app icons
+- [ ] Backend Core (Python Sidecar)
+    - [ ] Implement LLM Interface (Abstraction layer for Local/Remote)
+    - [ ] Implement Ephemeral Memory (No DB, in-memory list)
+    - [ ] Integrate simple chat logic (e.g., LlamaIndex or simple OpenAI client initially)
+- [ ] Frontend Core (React/Tauri)
+    - [ ] Basic Chat UI Layout (TUI Style, Monospace, Dark Mode)
+    - [ ] Markdown Rendering & Copy-to-Clipboard
+    - [ ] Settings Page (LLM Selection, Search Providers, Hotkeys)
+- [ ] Web Search Capability
+    - [ ] Integrate Search Tool (DuckDuckGo, SearXNG)
+    - [ ] Connect Search to Chat Logic (RAG or Tool calling)
+- [ ] Packaging and Distribution
+    - [ ] Configure bundling for MacOS (including Python runtime)
+    - [ ] Verify standalone executable

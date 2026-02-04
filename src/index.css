@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* TUI-inspired terminal styles */
+:root {
+  --terminal-bg: #0d0d0d;
+  --terminal-fg: #e0e0e0;
+  --terminal-dim: #6c6c6c;
+  --terminal-accent: #00d4aa;
+  --terminal-secondary: #5c7aea;
+  --terminal-border: #2a2a2a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+  background-color: var(--terminal-bg);
+  color: var(--terminal-fg);
+  overflow: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--terminal-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--terminal-dim);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--terminal-accent);
+}
+
+/* Selection styling */
+::selection {
+  background-color: var(--terminal-accent);
+  color: var(--terminal-bg);
+}
+
+/* Markdown styles */
+.markdown {
+  line-height: 1.6;
+}
+
+.markdown pre {
+  background: #1a1a1a;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  border: 1px solid var(--terminal-border);
+}
+
+.markdown code {
+  background: #1a1a1a;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.markdown pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.markdown blockquote {
+  border-left: 3px solid var(--terminal-accent);
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--terminal-dim);
+}
+
+.markdown a {
+  color: var(--terminal-accent);
+  text-decoration: none;
+}
+
+.markdown a:hover {
+  text-decoration: underline;
+}
+
+/* Blinking cursor */
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Glassmorphism for floating elements */
+.glass {
+  background: rgba(13, 13, 13, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--terminal-border);
+}
