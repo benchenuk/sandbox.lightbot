@@ -115,7 +115,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: S
                 type="text"
                 value={settings.hotkey}
                 onChange={(e) => updateSetting("hotkey", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
                          text-text-primary text-sm focus:outline-none focus:border-accent"
                 placeholder="e.g., Command+Shift+O"
               />
@@ -124,18 +124,6 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: S
               </p>
             </div>
 
-            <div>
-              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
-                System Prompt
-              </label>
-              <textarea
-                value={settings.systemPrompt}
-                onChange={(e) => updateSetting("systemPrompt", e.target.value)}
-                rows={5}
-                className="w-full px-2 py-1.5 bg-surface border border-border-primary
-                         text-text-primary text-sm focus:outline-none focus:border-accent resize-none font-sans"
-              />
-            </div>
           </>
         )}
 
@@ -149,7 +137,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: S
                 type="text"
                 value={settings.apiBase}
                 onChange={(e) => updateSetting("apiBase", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
                          text-text-primary text-sm focus:outline-none focus:border-accent"
                 placeholder="http://localhost:11434"
               />
@@ -166,7 +154,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: S
                 type="password"
                 value={settings.apiKey}
                 onChange={(e) => updateSetting("apiKey", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
                          text-text-primary text-sm focus:outline-none focus:border-accent"
                 placeholder="sk-... (leave blank for local models)"
               />
@@ -180,9 +168,22 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: S
                 type="text"
                 value={settings.model}
                 onChange={(e) => updateSetting("model", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
                          text-text-primary text-sm focus:outline-none focus:border-accent"
                 placeholder="llama3.2, gpt-4, etc."
+              />
+            </div>
+
+            <div>
+              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
+                System Prompt
+              </label>
+              <textarea
+                value={settings.systemPrompt}
+                onChange={(e) => updateSetting("systemPrompt", e.target.value)}
+                rows={5}
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
+                         text-text-primary text-sm focus:outline-none focus:border-accent font-sans"
               />
             </div>
 
@@ -203,7 +204,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: S
                     e.target.value as Settings["searchProvider"]
                   )
                 }
-                className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
                          text-text-primary text-sm focus:outline-none focus:border-accent"
               >
                 <option value="duckduckgo">DuckDuckGo</option>
@@ -220,7 +221,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: S
                   type="text"
                   value={settings.searchUrl}
                   onChange={(e) => updateSetting("searchUrl", e.target.value)}
-                  className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                  className="w-full px-2 py-1.5 bg-surface border border-border-subtle
                            text-text-primary text-sm focus:outline-none focus:border-accent"
                   placeholder="http://localhost:8080"
                 />

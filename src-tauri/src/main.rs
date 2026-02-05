@@ -23,11 +23,10 @@ fn toggle_window_visibility<R: Runtime>(app: &tauri::AppHandle<R>) {
 
 fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
     let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
-    let hide_i = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>)?;
     let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
 
-    let menu = Menu::with_items(app, &[&show_i, &hide_i, &separator, &quit_i])?;
+    let menu = Menu::with_items(app, &[&show_i, &separator, &quit_i])?;
 
     let icon = app.default_window_icon().cloned().expect("Failed to get default window icon. Please ensure icons are generated.");
 
@@ -40,10 +39,6 @@ fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()>
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.show();
                     let _ = window.set_focus();
-                }
-            } else if event_id == "hide" {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.hide();
                 }
             } else if event_id == "quit" {
                 app.exit(0);

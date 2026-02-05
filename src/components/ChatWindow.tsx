@@ -77,7 +77,7 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
               type="text"
               placeholder="Type a message..."
               disabled={isStreaming}
-              className="w-full px-3 py-1.5 bg-surface border border-border-primary
+              className="w-full px-3 py-1.5 bg-surface border border-border-subtle
                        text-text-primary placeholder-text-disabled text-base
                        focus:outline-none focus:border-accent
                        disabled:opacity-50 disabled:cursor-not-allowed

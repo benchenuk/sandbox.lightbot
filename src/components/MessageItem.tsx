@@ -34,14 +34,16 @@ export default function MessageItem({ message }: MessageItemProps) {
           </span>
         </div>
         
-        {/* Copy Button */}
-        <button
-          onClick={handleCopy}
-          className="opacity-0 group-hover:opacity-100 p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all"
-          title="Copy"
-        >
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-        </button>
+        {/* Copy Button - only for assistant messages */}
+        {!isUser && (
+          <button
+            onClick={handleCopy}
+            className="opacity-0 group-hover:opacity-100 p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all"
+            title="Copy"
+          >
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+          </button>
+        )}
       </div>
 
       {/* Content */}
