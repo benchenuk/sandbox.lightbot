@@ -1,27 +1,27 @@
-"""
-Chat Engine - Core AI logic using LlamaIndex
-Supports both Local (Ollama) and Remote (OpenAI) LLMs.
-"""
-
+import os
 from collections import defaultdict
-from typing import AsyncGenerator
+from typing import AsyncGenerator, List
+from dotenv import load_dotenv
 
-from llama_index.core import Settings
+# Load environment variables
+load_dotenv()
+
 from llama_index.core.llms import ChatMessage, MessageRole
-from llama_index.llms.ollama import Ollama
-from llama_index.llms.openai import OpenAI
+from llama_index.llms.openai_like import OpenAILike
 
 from tools.search import SearchTool
+from prompts import CONDENSE_QUESTION_PROMPT, SEARCH_ANSWER_PROMPT
 
 
 class ChatEngine:
     """Main chat engine with ephemeral memory."""
     
     def __init__(self):
-        self.provider: str = "ollama"  # "ollama" or "openai"
-        self.model: str = "llama3.2"
-        self.base_url: str | None = None
-        self.api_key: str | None = None
+        # Load settings from env or defaults
+        self.model: str = os.getenv("LLM_MODEL", "gpt-4o")
+        self.fast_model: str = os.getenv("LLM_FAST_MODEL", self.model)
+        self.base_url: str | None = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
+        self.api_key: str | None = os.getenv("LLM_API_KEY", None)
         self.system_prompt: str = self._default_system_prompt()
         
         # Ephemeral memory: session_id -> list of messages
@@ -30,8 +30,10 @@ class ChatEngine:
         # Search tool
         self.search_tool = SearchTool()
         
-        # Initialize LLM
-        self._init_llm()
+        # Initialize LLMs
+        self.llm = None
+        self.fast_llm = None
+        self._init_llms()
     
     def _default_system_prompt(self) -> str:
         return (
@@ -40,53 +42,115 @@ class ChatEngine:
             "When you need current information, you can search the web."
         )
     
-    def _init_llm(self):
-        """Initialize the LLM based on current settings."""
-        if self.provider == "ollama":
-            base_url = self.base_url or "http://localhost:11434"
-            Settings.llm = Ollama(model=self.model, base_url=base_url)
-        elif self.provider == "openai":
-            api_key = self.api_key or "dummy-key"
-            base_url = self.base_url or None
-            Settings.llm = OpenAI(
-                model=self.model,
-                api_key=api_key,
-                base_url=base_url
-            )
+    def _init_llms(self):
+        """Initialize both primary and fast LLMs using OpenAI-compatible interface."""
+        api_key = self.api_key or "dummy-key"
+        self.llm = OpenAILike(
+            model=self.model, 
+            api_key=api_key, 
+            api_base=self.base_url,
+            is_chat_model=True,
+            timeout=60.0
+        )
+        self.fast_llm = OpenAILike(
+            model=self.fast_model, 
+            api_key=api_key, 
+            api_base=self.base_url,
+            is_chat_model=True,
+            timeout=30.0
+        )
+
     
-    async def chat(self, message: str, session_id: str | None = None) -> str:
+    async def _rewrite_query(self, message: str, history: List[ChatMessage]) -> str:
+        """Rewrite the user query using conversation history for better search results."""
+        if not history:
+            return message
+        
+        # Format history for prompt
+        history_str = "\n".join([f"{m.role.value}: {m.content}" for m in history])
+        prompt = CONDENSE_QUESTION_PROMPT.format(
+            chat_history=history_str, 
+            question=message
+        )
+        
+        try:
+            response = await self.fast_llm.acomplete(prompt)
+            standalone_query = response.text.strip()
+            # If the model fails or returns empty, fallback to original
+            return standalone_query if standalone_query else message
+        except Exception as e:
+            print(f"Error rewriting query: {e}")
+            return message
+
+    async def _get_search_context(self, query: str) -> str:
+        """Perform search and format results as context."""
+        results = await self.search_tool.search(query)
+        if not results:
+            return "No search results found."
+        
+        context_lines = []
+        for i, r in enumerate(results, 1):
+            if "error" in r:
+                continue
+            line = f"[{i}] {r['title']}\nURL: {r['url']}\nSnippet: {r['snippet']}\n"
+            context_lines.append(line)
+        
+        return "\n".join(context_lines) if context_lines else "No valid search results."
+
+    async def chat(self, message: str, session_id: str | None = None, search_mode: str = "off") -> str:
         """Send a message and get a response."""
         sid = session_id or "default"
+        history = self._memory[sid]
         
-        # Build conversation history
-        messages = self._build_messages(sid, message)
+        current_message = message
+        system_p = self.system_prompt
+
+        # Handle Search Mode
+        if search_mode == "on" or (search_mode == "auto" and False): # Auto deferred
+            standalone_query = await self._rewrite_query(message, history)
+            search_context = await self._get_search_context(standalone_query)
+            system_p = SEARCH_ANSWER_PROMPT.format(search_results=search_context)
         
-        # Get response from LLM
-        llm = Settings.llm
-        response = await llm.achat(messages)
+        # Build messages
+        messages = [ChatMessage(role=MessageRole.SYSTEM, content=system_p)]
+        messages.extend(history)
+        messages.append(ChatMessage(role=MessageRole.USER, content=current_message))
+        
+        # Get response
+        response = await self.llm.achat(messages)
+        content = response.message.content
         
         # Store in memory
         self._memory[sid].append(ChatMessage(role=MessageRole.USER, content=message))
-        self._memory[sid].append(
-            ChatMessage(role=MessageRole.ASSISTANT, content=response.message.content)
-        )
+        self._memory[sid].append(ChatMessage(role=MessageRole.ASSISTANT, content=content))
         
-        return response.message.content
+        return content
     
     async def chat_stream(
-        self, message: str, session_id: str | None = None
+        self, message: str, session_id: str | None = None, search_mode: str = "off"
     ) -> AsyncGenerator[str, None]:
         """Send a message and get a streaming response."""
         sid = session_id or "default"
+        history = self._memory[sid]
         
-        # Build conversation history
-        messages = self._build_messages(sid, message)
+        current_message = message
+        system_p = self.system_prompt
+
+        # Handle Search Mode
+        if search_mode == "on" or (search_mode == "auto" and False): # Auto deferred
+            standalone_query = await self._rewrite_query(message, history)
+            search_context = await self._get_search_context(standalone_query)
+            system_p = SEARCH_ANSWER_PROMPT.format(search_results=search_context)
+            yield f"🔍 Searching for: {standalone_query}...\n\n"
         
-        # Stream response from LLM
-        llm = Settings.llm
+        # Build messages
+        messages = [ChatMessage(role=MessageRole.SYSTEM, content=system_p)]
+        messages.extend(history)
+        messages.append(ChatMessage(role=MessageRole.USER, content=current_message))
+        
         full_response = []
-        
-        async for chunk in llm.astream_chat(messages):
+        stream = await self.llm.astream_chat(messages)
+        async for chunk in stream:
             content = chunk.delta or ""
             full_response.append(content)
             yield content
@@ -96,15 +160,6 @@ class ChatEngine:
         self._memory[sid].append(
             ChatMessage(role=MessageRole.ASSISTANT, content="".join(full_response))
         )
-    
-    def _build_messages(
-        self, session_id: str, new_message: str
-    ) -> list[ChatMessage]:
-        """Build the message list including system prompt and history."""
-        messages = [ChatMessage(role=MessageRole.SYSTEM, content=self.system_prompt)]
-        messages.extend(self._memory[session_id])
-        messages.append(ChatMessage(role=MessageRole.USER, content=new_message))
-        return messages
     
     def clear_memory(self, session_id: str | None = None):
         """Clear chat memory for a session or all sessions."""
@@ -116,18 +171,18 @@ class ChatEngine:
     def get_settings(self) -> dict:
         """Get current engine settings."""
         return {
-            "provider": self.provider,
             "model": self.model,
+            "fast_model": self.fast_model,
             "base_url": self.base_url,
             "system_prompt": self.system_prompt,
         }
     
     def update_settings(self, settings: dict):
-        """Update engine settings and reinitialize LLM if needed."""
-        if "provider" in settings:
-            self.provider = settings["provider"]
+        """Update engine settings and reinitialize LLMs if needed."""
         if "model" in settings:
             self.model = settings["model"]
+        if "fast_model" in settings:
+            self.fast_model = settings["fast_model"]
         if "base_url" in settings:
             self.base_url = settings["base_url"]
         if "api_key" in settings:
@@ -135,5 +190,6 @@ class ChatEngine:
         if "system_prompt" in settings:
             self.system_prompt = settings["system_prompt"]
         
-        # Reinitialize LLM with new settings
-        self._init_llm()
+        self._init_llms()
+
+

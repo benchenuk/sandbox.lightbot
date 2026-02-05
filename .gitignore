@@ -1,7 +1,6 @@
 # Dependencies
 node_modules/
 
-
 # Python-generated files
 __pycache__/
 *.py[oc]
@@ -23,3 +22,4 @@ src-tauri/bin/python-sidecar*
 
 # Local
 .DS_Store
+.env

@@ -73,7 +73,28 @@ fn setup_global_hotkey<R: Runtime>(app: &tauri::AppHandle<R>) -> Result<(), Box<
 
 async fn spawn_python_sidecar<R: Runtime>(
     app: &tauri::AppHandle<R>,
-) -> Result<(Child, u16), String> {
+) -> Result<(Option<Child>, u16), String> {
+    // Check for manual sidecar port (Option 1 - Manual Dev Mode)
+    if let Ok(manual_port) = std::env::var("LIGHTBOT_SIDECAR_PORT") {
+        if let Ok(port) = manual_port.parse::<u16>() {
+            println!("🚀 Using manual Python sidecar on port {}", port);
+            
+            // Verify the manual server is actually responsive
+            let client = reqwest::Client::new();
+            let health_url = format!("http://127.0.0.1:{}/health", port);
+            
+            match client.get(&health_url).timeout(std::time::Duration::from_secs(2)).send().await {
+                Ok(resp) if resp.status().is_success() => {
+                    println!("Verified manual sidecar is healthy on port {}", port);
+                    return Ok((None, port));
+                }
+                _ => {
+                    return Err(format!("Manual sidecar port {} provided via LIGHTBOT_SIDECAR_PORT but server is not responding at {}", port, health_url));
+                }
+            }
+        }
+    }
+
     // Find an available port
     let port = portpicker::pick_unused_port().ok_or("No available port")?;
 
@@ -138,7 +159,7 @@ async fn spawn_python_sidecar<R: Runtime>(
         match client.get(&health_url).timeout(std::time::Duration::from_secs(2)).send().await {
             Ok(resp) if resp.status().is_success() => {
                 println!("Python sidecar is healthy on port {}", port);
-                return Ok((child, port));
+                return Ok((Some(child), port));
             }
             _ => {
                 retries -= 1;

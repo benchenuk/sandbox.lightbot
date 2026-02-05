@@ -69,7 +69,7 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
           <span className="text-2xs text-text-disabled font-mono">BUILD: {BUILD_TIMESTAMP}</span>
           <span className="text-2xs text-accent font-mono">IDE-MODE</span>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-3 flex gap-2">
           <div className="flex-1 relative">
             <input

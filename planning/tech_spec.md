@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**LightBot** is a native macOS desktop AI chat application with web search capabilities. Built with a hybrid Tauri + Python architecture, it provides a lightweight, ephemeral chat experience with both local (Ollama) and remote (OpenAI) LLM support.
+**LightBot** is a native macOS desktop AI chat application with web search capabilities. Built with a hybrid Tauri + Python architecture, it provides a lightweight, ephemeral chat experience with support for any OpenAI-compatible LLM (local or remote).
 
 ---
 
@@ -95,7 +95,7 @@ LightBot uses a "Sidecar" architecture where a compiled Python binary runs as a 
 | Framework | FastAPI | 0.115+ | ✅ Ready |
 | Server | Uvicorn | 0.32+ | ✅ Ready |
 | AI Framework | LlamaIndex | 0.12+ | ✅ Ready |
-| LLM Providers | Ollama / OpenAI | - | ✅ Ready |
+| LLM Support | OpenAI-compatible API | - | ✅ Ready |
 | Search | duckduckgo-search | 6.3+ | ✅ Ready |
 | Bundling | PyInstaller | 6.11+ | ✅ Ready |
 
@@ -170,6 +170,24 @@ This usually happens if `PyInstaller` didn't include the local modules. Ensure y
 | GET | `/settings` | Returns current LLM/search configuration |
 | POST | `/settings` | Updates configuration on the fly |
 
+### API Payload (`/chat` & `/chat/stream`)
+```json
+{
+  "message": "User query",
+  "session_id": "optional-session-id",
+  "search_mode": "off" | "on" | "auto"  // Default: "off"
+}
+```
+
+## Configuration (Environment Variables)
+
+The Sidecar can be configured via `.env` to support Dual Models without UI changes:
+- `LLM_MODEL`: Primary model for reasoning/answering (e.g., `gpt-4o`, `llama3.1`).
+- `LLM_FAST_MODEL`: Fast model for query rewriting (e.g., `gpt-4o-mini`, `llama3.2`).
+- `LLM_BASE_URL`: OpenAI-compatible API base URL.
+- `LLM_API_KEY`: API key for the provider.
+
+
 ### IPC Commands (Rust)
 
 | Command | Return Type | Description |
@@ -183,15 +201,16 @@ This usually happens if `PyInstaller` didn't include the local modules. Ensure y
 ### Phase 1-4: Core Development ✅ COMPLETE
 - [x] TUI-inspired React Frontend
 - [x] Rust Core (Tray, Hotkeys, Window Management)
-- [x] Python LlamaIndex Engine (Ollama & OpenAI)
+- [x] Python LlamaIndex Engine (OpenAI-compatible)
 - [x] Sidecar Integration bridge
 
 ### Phase 5: Packaging & Distribution 🔄 IN PROGRESS
 - [x] PyInstaller Build Script
 - [x] Multi-path discovery in Rust
+- [x] Manual Dev Mode support
 - [ ] macOS App Bundling
 - [ ] Code Signing & Notarization
 
 ---
 
-*Last Updated: 2026-02-04*
+*Last Updated: 2026-02-05*

@@ -1,9 +1,8 @@
 # Task List for Tauri + Python AI Chat Bot
 
-- [ ] Project Initialization and Planning
+- [x] Project Initialization and Planning ✅ COMPLETE
     - [x] Explore existing workspace and clean up if necessary
-    - [x] Create detailed `implementation_plan.md`
-    - [x] Submit plan for user review
+    - [x] Create detailed documentation
 - [x] Skeleton Application Setup ✅ COMPLETE
     - [x] Initialize Tauri v2 project
     - [x] Set up Python sidecar environment (Conda/Venv)
@@ -13,19 +12,21 @@
     - [x] TUI-style UI components
     - [x] Settings panel
     - [x] FastAPI Python sidecar skeleton
-    - [ ] Build Python sidecar binary (PyInstaller)
-    - [ ] Generate app icons
-- [ ] Backend Core (Python Sidecar)
-    - [ ] Implement LLM Interface (Abstraction layer for Local/Remote)
-    - [ ] Implement Ephemeral Memory (No DB, in-memory list)
-    - [ ] Integrate simple chat logic (e.g., LlamaIndex or simple OpenAI client initially)
+- [x] Backend Core (Python Sidecar) ✅ COMPLETE
+    - [x] Investigate Chat Context & Search Design
+    - [x] Implement LLM Interface (Dual Model Support via OpenAILike)
+    - [x] Implement Ephemeral Memory (In-memory Chat History)
+    - [x] Integrate Chat Logic & Search (Query Rewriting Pipeline)
 - [ ] Frontend Core (React/Tauri)
-    - [ ] Basic Chat UI Layout (TUI Style, Monospace, Dark Mode)
+    - [ ] Basic Chat UI Layout (Finalizing TUI Style)
     - [ ] Markdown Rendering & Copy-to-Clipboard
     - [ ] Settings Page (LLM Selection, Search Providers, Hotkeys)
-- [ ] Web Search Capability
-    - [ ] Integrate Search Tool (DuckDuckGo, SearXNG)
-    - [ ] Connect Search to Chat Logic (RAG or Tool calling)
+- [x] Web Search Capability ✅ COMPLETE
+    - [x] Integrate Search Tool (DuckDuckGo, SearXNG)
+    - [x] Connect Search to Chat Logic (Query Rewrite Pipeline)
 - [ ] Packaging and Distribution
-    - [ ] Configure bundling for MacOS (including Python runtime)
+    - [x] PyInstaller sidecar bundling
+    - [x] Manual Dev Mode port support
+    - [ ] Configure bundling for MacOS app
     - [ ] Verify standalone executable
+

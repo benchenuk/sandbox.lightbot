@@ -11,8 +11,15 @@ import sys
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
+from dotenv import load_dotenv
+
 # Add current directory to sys.path for local imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# Load environment variables from .env file
+# Try both the current directory and the parent directory
+load_dotenv()  # In current dir (python/.env)
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")) # In project root
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +36,7 @@ chat_engine: ChatEngine | None = None
 class ChatRequest(BaseModel):
     message: str
     session_id: str | None = None
+    search_mode: str = "off"  # "off", "on", "auto"
 
 
 class ChatResponse(BaseModel):
@@ -84,7 +92,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
     if not chat_engine:
         return ChatResponse(response="Error: Chat engine not initialized")
     
-    response = await chat_engine.chat(request.message, request.session_id)
+    response = await chat_engine.chat(request.message, request.session_id, request.search_mode)
     return ChatResponse(response=response)
 
 
@@ -99,7 +107,7 @@ async def chat_stream(request: ChatRequest) -> StreamingResponse:
         )
     
     async def generate() -> AsyncGenerator[str, None]:
-        async for chunk in chat_engine.chat_stream(request.message, request.session_id):
+        async for chunk in chat_engine.chat_stream(request.message, request.session_id, request.search_mode):
             yield chunk
     
     return StreamingResponse(generate(), media_type="text/plain")

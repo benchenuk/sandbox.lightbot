@@ -4,7 +4,7 @@ A lightweight, native MacOS desktop AI chat application with web search capabili
 
 ## Features
 
-- 🤖 **AI Chat**: Support for both local (Ollama) and remote (OpenAI) LLMs
+- 🤖 **AI Chat**: Support for OpenAI-compatible LLMs (local or remote)
 - 🔍 **Web Search**: Integrated DuckDuckGo and SearXNG search
 - 💻 **Native App**: Built with Tauri for native MacOS experience
 - ⚡ **Global Hotkey**: Quick access from anywhere (default: `Cmd+Shift+O`)
@@ -45,7 +45,7 @@ A lightweight, native MacOS desktop AI chat application with web search capabili
 - **Desktop Framework**: Tauri v2 (Rust)
 - **Backend**: Python + FastAPI
 - **AI Framework**: LlamaIndex
-- **LLM Support**: Ollama (local), OpenAI (remote)
+- **LLM Support**: OpenAI-compatible API (any provider)
 - **Search**: DuckDuckGo, SearXNG
 
 ## Prerequisites
@@ -85,6 +85,22 @@ cp .env.example .env
 # This starts both the frontend dev server and Tauri
 npm run tauri-dev
 ```
+
+### Manual Development Mode (Fastest Iteration)
+
+If you are frequently modifying the Python sidecar, you can run it manually to avoid rebuilding the binary:
+
+1.  **Start the Python server** in a separate terminal:
+    ```bash
+    cd python
+    PYTHONPATH=. ../venv/bin/python server.py --port 8080
+    ```
+2.  **Start Tauri** with the manual port environment variable:
+    ```bash
+    LIGHTBOT_SIDECAR_PORT=8080 npm run tauri-dev
+    ```
+
+In this mode, Tauri will connect to your running Python process instead of trying to spawn a new one. Changes to `engine.py` or `server.py` will be picked up whenever you restart the Python server (or instantly if using a reloader).
 
 ## Building
 
@@ -133,15 +149,16 @@ lightbot/
 
 ## Configuration
 
-Settings are stored in localStorage and include:
+Configuration is managed via environment variables (in `.env`) and includes:
 
-- **LLM Provider**: Ollama or OpenAI
-- **Model**: e.g., llama3.2, gpt-4
-- **Base URL**: Custom endpoint for self-hosted models
-- **API Key**: For remote providers
+- **Model**: Primary model (e.g., `gpt-4o`, `llama3.1`)
+- **Fast Model**: Rewriter model (e.g., `gpt-4o-mini`, `llama3.2`)
+- **Base URL**: OpenAI-compatible API endpoint
+- **API Key**: Authentication key
 - **Search Provider**: DuckDuckGo or SearXNG
 - **Global Hotkey**: Configurable keyboard shortcut
 - **System Prompt**: Customizable AI behavior
+
 
 ## License
 
