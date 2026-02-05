@@ -1,15 +1,36 @@
-import { useRef, useEffect } from "react";
-import { Send, Square, Trash2 } from "lucide-react";
-import { useChat } from "../hooks/useChat";
+import { useRef, useEffect, useState } from "react";
+import { Send, Square, Trash2, Globe } from "lucide-react";
+import { useChat, type SearchMode } from "../hooks/useChat";
 import MessageItem from "./MessageItem";
+
+// Search mode toggle button
+function SearchToggle({ mode, onChange }: { mode: SearchMode; onChange: (mode: SearchMode) => void }) {
+  const isOn = mode === "on";
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(isOn ? "off" : "on")}
+      className={`w-9 h-9 shrink-0 flex items-center justify-center transition-colors ${
+        isOn
+          ? "bg-accent/10 text-accent border border-accent"
+          : "bg-surface text-text-muted border border-border-subtle hover:text-text-primary hover:bg-surface-hover"
+      }`}
+      title={isOn ? "Web search: On" : "Web search: Off"}
+    >
+      <Globe size={16} />
+    </button>
+  );
+}
 
 interface ChatWindowProps {
   apiPort: number | null;
 }
 
 export default function ChatWindow({ apiPort }: ChatWindowProps) {
+  const [searchMode, setSearchMode] = useState<SearchMode>("off");
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const { messages, isStreaming, error, sendMessage, stopStreaming, clearMessages } =
-    useChat({ apiPort });
+    useChat({ apiPort, searchMode });
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +83,8 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
       {/* Input Area */}
       <div className="border-t border-border-subtle bg-surface-secondary">
         <form onSubmit={handleSubmit} className="p-3 flex items-center gap-2">
+          {/* Search Toggle */}
+          <SearchToggle mode={searchMode} onChange={setSearchMode} />
           <div className="flex-1 relative">
             <input
               ref={inputRef}
@@ -107,10 +130,10 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
           {messages.length > 0 && (
             <button
               type="button"
-              onClick={clearMessages}
+              onClick={() => setShowClearConfirm(true)}
               disabled={isStreaming}
-              className="w-9 h-9 shrink-0 border border-border-primary text-text-muted
-                       hover:text-text-primary hover:border-text-muted
+              className="w-9 h-9 shrink-0 border border-error/30 text-text-muted
+                       hover:text-error hover:border-error/50
                        transition-colors flex items-center justify-center disabled:opacity-50"
               title="Clear chat"
             >
@@ -119,6 +142,37 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
           )}
         </form>
       </div>
+
+      {/* Clear Chat Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-surface-secondary border border-border-subtle p-4 max-w-sm mx-4">
+            <h3 className="text-text-primary font-medium mb-2">Clear Chat?</h3>
+            <p className="text-text-muted text-sm mb-4">
+              This will delete all messages in the current conversation. This action cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(false)}
+                className="px-3 py-1.5 text-sm text-text-muted hover:text-text-primary border border-border-subtle hover:bg-surface-hover transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  clearMessages();
+                  setShowClearConfirm(false);
+                }}
+                className="px-3 py-1.5 text-sm bg-error/10 text-error border border-error/30 hover:bg-error/20 transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

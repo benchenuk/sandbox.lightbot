@@ -6,6 +6,7 @@ Provides AI chat and web search capabilities to the Tauri frontend.
 
 import argparse
 import asyncio
+import logging
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -28,6 +29,13 @@ from pydantic import BaseModel
 
 from engine import ChatEngine
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    stream=sys.stdout,
+)
+logger = logging.getLogger("lightbot.server")
 
 # Global chat engine instance
 chat_engine: ChatEngine | None = None
@@ -53,11 +61,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     """Manage application lifecycle."""
     global chat_engine
     # Startup
-    print("Starting LightBot Python Sidecar...")
+    logger.info("Starting LightBot Python Sidecar...")
     chat_engine = ChatEngine()
     yield
     # Shutdown
-    print("Shutting down LightBot Python Sidecar...")
+    logger.info("Shutting down LightBot Python Sidecar...")
     if chat_engine:
         chat_engine.clear_memory()
 

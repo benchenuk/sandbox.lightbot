@@ -7,12 +7,15 @@ export interface Message {
   timestamp: Date;
 }
 
+export type SearchMode = "off" | "on" | "auto";
+
 interface UseChatOptions {
   apiPort: number | null;
   sessionId?: string;
+  searchMode?: SearchMode;
 }
 
-export function useChat({ apiPort, sessionId = "default" }: UseChatOptions) {
+export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +46,7 @@ export function useChat({ apiPort, sessionId = "default" }: UseChatOptions) {
         const response = await fetch(`http://127.0.0.1:${apiPort}/chat/stream`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: content, session_id: sessionId }),
+          body: JSON.stringify({ message: content, session_id: sessionId, search_mode: searchMode }),
           signal: abortControllerRef.current.signal,
         });
 
@@ -89,7 +92,7 @@ export function useChat({ apiPort, sessionId = "default" }: UseChatOptions) {
         abortControllerRef.current = null;
       }
     },
-    [apiPort, sessionId]
+    [apiPort, sessionId, searchMode]
   );
 
   const stopStreaming = useCallback(() => {

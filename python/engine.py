@@ -1,3 +1,4 @@
+import logging
 import os
 from collections import defaultdict
 from typing import AsyncGenerator, List
@@ -5,6 +6,9 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+# Configure logging
+logger = logging.getLogger("lightbot.engine")
 
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai_like import OpenAILike
@@ -66,6 +70,7 @@ class ChatEngine:
         if not history:
             return message
         
+        logger.info("[EVENT] Query rewrite started")
         # Format history for prompt
         history_str = "\n".join([f"{m.role.value}: {m.content}" for m in history])
         prompt = CONDENSE_QUESTION_PROMPT.format(
@@ -76,15 +81,18 @@ class ChatEngine:
         try:
             response = await self.fast_llm.acomplete(prompt)
             standalone_query = response.text.strip()
+            logger.info("[EVENT] Query rewrite completed")
             # If the model fails or returns empty, fallback to original
             return standalone_query if standalone_query else message
         except Exception as e:
-            print(f"Error rewriting query: {e}")
+            logger.error(f"Error rewriting query: {e}")
             return message
 
     async def _get_search_context(self, query: str) -> str:
         """Perform search and format results as context."""
+        logger.info("[EVENT] Web search started")
         results = await self.search_tool.search(query)
+        logger.info(f"[EVENT] Web search completed: {len(results)} results")
         if not results:
             return "No search results found."
         
@@ -117,7 +125,9 @@ class ChatEngine:
         messages.append(ChatMessage(role=MessageRole.USER, content=current_message))
         
         # Get response
+        logger.info("[EVENT] LLM API call started")
         response = await self.llm.achat(messages)
+        logger.info("[EVENT] LLM API call completed")
         content = response.message.content
         
         # Store in memory
@@ -137,7 +147,9 @@ class ChatEngine:
         system_p = self.system_prompt
 
         # Handle Search Mode
+        logger.info(f"[EVENT] Chat request received - search_mode={search_mode}")
         if search_mode == "on" or (search_mode == "auto" and False): # Auto deferred
+            logger.info("[EVENT] Search mode enabled, starting search flow")
             standalone_query = await self._rewrite_query(message, history)
             search_context = await self._get_search_context(standalone_query)
             system_p = SEARCH_ANSWER_PROMPT.format(search_results=search_context)
@@ -149,11 +161,13 @@ class ChatEngine:
         messages.append(ChatMessage(role=MessageRole.USER, content=current_message))
         
         full_response = []
+        logger.info("[EVENT] LLM API call started (streaming)")
         stream = await self.llm.astream_chat(messages)
         async for chunk in stream:
             content = chunk.delta or ""
             full_response.append(content)
             yield content
+        logger.info("[EVENT] LLM API call completed (streaming)")
         
         # Store in memory after streaming completes
         self._memory[sid].append(ChatMessage(role=MessageRole.USER, content=message))
