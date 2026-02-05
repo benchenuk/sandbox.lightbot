@@ -61,7 +61,7 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
 
       {/* Input Area */}
       <div className="border-t border-border-subtle bg-surface-secondary">
-        <form onSubmit={handleSubmit} className="p-3 flex gap-2">
+        <form onSubmit={handleSubmit} className="p-3 flex items-center gap-2">
           <div className="flex-1 relative">
             <input
               ref={inputRef}
@@ -85,7 +85,7 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
             <button
               type="button"
               onClick={stopStreaming}
-              className="px-2.5 py-1.5 bg-error/10 border border-error/30 text-error
+              className="w-9 h-9 shrink-0 bg-error/10 border border-error/30 text-error
                        hover:bg-error/20 transition-colors flex items-center justify-center"
               title="Stop"
             >
@@ -95,12 +95,12 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
             <button
               type="submit"
               disabled={isStreaming}
-              className="px-2.5 py-1.5 bg-accent text-white
+              className="w-9 h-9 shrink-0 bg-accent text-white
                        hover:bg-accent-hover transition-colors flex items-center justify-center
                        disabled:opacity-50 disabled:cursor-not-allowed"
               title="Send"
             >
-              <Send size={12} />
+              <Send size={12} className="ml-0.5" />
             </button>
           )}
 
@@ -109,7 +109,7 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
               type="button"
               onClick={clearMessages}
               disabled={isStreaming}
-              className="px-2.5 py-1.5 border border-border-primary text-text-muted
+              className="w-9 h-9 shrink-0 border border-border-primary text-text-muted
                        hover:text-text-primary hover:border-text-muted
                        transition-colors flex items-center justify-center disabled:opacity-50"
               title="Clear chat"

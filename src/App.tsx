@@ -17,7 +17,7 @@ function App() {
   const isLoading = !isReady && !error;
 
   return (
-    <div className="h-screen flex flex-col bg-surface text-text overflow-hidden">
+    <div className="h-full flex flex-col bg-surface text-text overflow-hidden">
       {/* Title Bar */}
       <TitleBar
         onSettings={() => setShowSettings(!showSettings)}
@@ -25,11 +25,11 @@ function App() {
       />
 
       {/* Main Content */}
-      <div className="flex-1 relative flex overflow-hidden">
-        {/* Chat Window */}
-        <div className="flex-1 flex flex-col">
+      <div className="flex-1 relative">
+        {/* Chat Window - fills container */}
+        <div className="absolute inset-0">
           {isLoading ? (
-            <div className="flex-1 flex items-center justify-center">
+            <div className="h-full flex items-center justify-center">
               <div className="text-center">
                 <div className="flex items-center justify-center gap-1 text-text-muted mb-2">
                   <span className="w-1.5 h-1.5 bg-text-muted animate-pulse" />
@@ -51,9 +51,9 @@ function App() {
           )}
         </div>
 
-        {/* Settings Panel */}
+        {/* Settings Panel - overlays on top */}
         {showSettings && (
-          <div className="w-72 border-l border-border-subtle bg-surface-secondary animate-in slide-in-from-right duration-150">
+          <div className="absolute right-0 top-0 h-full w-72 border-l border-border-subtle bg-surface-secondary animate-in slide-in-from-right duration-150 z-10">
             <SettingsPanel
               onClose={() => setShowSettings(false)}
               fontSize={fontSize}
