@@ -16,41 +16,41 @@ export default function TitleBar({
   return (
     <div
       data-tauri-drag-region
-      className="h-10 flex items-center justify-between px-4 border-b border-terminal-border select-none"
+      className="h-9 flex items-center justify-between px-3 border-b border-border-subtle bg-surface select-none"
       style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
     >
       {/* Left: Title */}
       <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
-        <span className="text-terminal-accent font-bold text-sm">●</span>
-        <span className="text-terminal-fg font-medium text-sm">LightBot</span>
+        <div className="w-2 h-2 bg-accent rounded-full" />
+        <span className="text-text-primary font-medium text-base tracking-tight">LightBot</span>
       </div>
 
       {/* Right: Controls */}
-      <div className="flex items-center gap-1" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+      <div className="flex items-center gap-0.5" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <button
           onClick={onSettings}
-          className={`p-2 rounded-md transition-colors ${
+          className={`p-1.5 transition-colors ${
             showSettings
-              ? "text-terminal-accent bg-terminal-accent/10"
-              : "text-terminal-dim hover:text-terminal-fg hover:bg-terminal-border"
+              ? "text-accent bg-accent-subtle"
+              : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
           }`}
           title="Settings"
         >
-          <Settings size={16} />
+          <Settings size={14} />
         </button>
         <button
           onClick={onMinimize}
-          className="p-2 rounded-md text-terminal-dim hover:text-terminal-fg hover:bg-terminal-border transition-colors"
+          className="p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
           title="Minimize"
         >
-          <Minus size={16} />
+          <Minus size={14} />
         </button>
         <button
           onClick={onClose}
-          className="p-2 rounded-md text-terminal-dim hover:text-terminal-error hover:bg-terminal-error/10 transition-colors"
+          className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 transition-colors"
           title="Hide"
         >
-          <X size={16} />
+          <X size={14} />
         </button>
       </div>
     </div>

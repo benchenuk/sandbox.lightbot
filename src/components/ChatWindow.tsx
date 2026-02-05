@@ -1,7 +1,10 @@
 import { useRef, useEffect } from "react";
 import { Send, Square, Trash2 } from "lucide-react";
 import { useChat } from "../hooks/useChat";
-import MessageBubble from "./MessageBubble";
+import MessageItem from "./MessageItem";
+
+// Build timestamp - changes with every build
+const BUILD_TIMESTAMP = "2026-02-05 15:10";
 
 interface ChatWindowProps {
   apiPort: number | null;
@@ -33,20 +36,20 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-surface">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-terminal-dim">
-            <div className="text-4xl mb-4 opacity-50">⌘</div>
-            <p className="text-sm">Welcome to LightBot</p>
-            <p className="text-xs mt-1 opacity-70">
+          <div className="h-full flex flex-col items-center justify-center text-text-muted">
+            <div className="text-3xl mb-3 opacity-30 font-mono">⌘</div>
+            <p className="text-md font-medium">LightBot</p>
+            <p className="text-xs mt-2 opacity-60">
               Press Command+Shift+O to toggle from anywhere
             </p>
           </div>
         ) : (
           messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+            <MessageItem key={message.id} message={message} />
           ))
         )}
         <div ref={messagesEndRef} />
@@ -54,28 +57,34 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
 
       {/* Error Banner */}
       {error && (
-        <div className="mx-4 mb-2 px-3 py-2 bg-terminal-error/10 border border-terminal-error/30 rounded text-terminal-error text-sm">
+        <div className="mx-3 mb-2 px-3 py-1.5 bg-error/10 border-t border-error/30 text-error text-base">
           {error}
         </div>
       )}
 
       {/* Input Area */}
-      <div className="p-4 border-t border-terminal-border">
-        <form onSubmit={handleSubmit} className="flex gap-2">
+      <div className="border-t border-border-subtle bg-surface-secondary">
+        {/* Build info bar */}
+        <div className="px-3 pt-1.5 flex items-center justify-between">
+          <span className="text-2xs text-text-disabled font-mono">BUILD: {BUILD_TIMESTAMP}</span>
+          <span className="text-2xs text-accent font-mono">IDE-MODE</span>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-3 flex gap-2">
           <div className="flex-1 relative">
             <input
               ref={inputRef}
               type="text"
               placeholder="Type a message..."
               disabled={isStreaming}
-              className="w-full px-4 py-2.5 bg-terminal-bg border border-terminal-border rounded-lg 
-                       text-terminal-fg placeholder-terminal-dim
-                       focus:outline-none focus:border-terminal-accent focus:ring-1 focus:ring-terminal-accent
+              className="w-full px-3 py-1.5 bg-surface border border-border-primary
+                       text-text-primary placeholder-text-disabled text-base
+                       focus:outline-none focus:border-accent
                        disabled:opacity-50 disabled:cursor-not-allowed
-                       text-sm"
+                       font-sans"
             />
             {isStreaming && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-terminal-accent text-xs cursor-blink">
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-accent text-base cursor-blink font-mono">
                 ▋
               </span>
             )}
@@ -85,22 +94,22 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
             <button
               type="button"
               onClick={stopStreaming}
-              className="px-4 py-2 bg-terminal-error/10 border border-terminal-error/30 text-terminal-error 
-                       rounded-lg hover:bg-terminal-error/20 transition-colors"
+              className="px-2.5 py-1.5 bg-error/10 border border-error/30 text-error
+                       hover:bg-error/20 transition-colors flex items-center justify-center"
               title="Stop"
             >
-              <Square size={18} fill="currentColor" />
+              <Square size={12} fill="currentColor" />
             </button>
           ) : (
             <button
               type="submit"
               disabled={isStreaming}
-              className="px-4 py-2 bg-terminal-accent text-terminal-bg 
-                       rounded-lg hover:bg-terminal-accent/90 transition-colors
+              className="px-2.5 py-1.5 bg-accent text-white
+                       hover:bg-accent-hover transition-colors flex items-center justify-center
                        disabled:opacity-50 disabled:cursor-not-allowed"
               title="Send"
             >
-              <Send size={18} />
+              <Send size={12} />
             </button>
           )}
 
@@ -109,12 +118,12 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
               type="button"
               onClick={clearMessages}
               disabled={isStreaming}
-              className="px-3 py-2 border border-terminal-border text-terminal-dim 
-                       rounded-lg hover:text-terminal-fg hover:border-terminal-fg/50 
-                       transition-colors disabled:opacity-50"
+              className="px-2.5 py-1.5 border border-border-primary text-text-muted
+                       hover:text-text-primary hover:border-text-muted
+                       transition-colors flex items-center justify-center disabled:opacity-50"
               title="Clear chat"
             >
-              <Trash2 size={18} />
+              <Trash2 size={12} />
             </button>
           )}
         </form>

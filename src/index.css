@@ -2,15 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-/* TUI-inspired terminal styles */
+/* macOS Professional IDE Style */
 :root {
-  --terminal-bg: #0d0d0d;
-  --terminal-fg: #e0e0e0;
-  --terminal-dim: #6c6c6c;
-  --terminal-accent: #00d4aa;
-  --terminal-secondary: #5c7aea;
-  --terminal-border: #2a2a2a;
+  /* Font size scale - change base to adjust all */
+  --font-base: 14px;
+  --font-xs: calc(var(--font-base) * 0.85);   /* ~12px */
+  --font-sm: var(--font-base);                /* 14px */
+  --font-md: calc(var(--font-base) * 1.15);   /* ~16px */
+  --font-lg: calc(var(--font-base) * 1.3);    /* ~18px */
+  
+  --surface-bg: #1e1e1e;
+  --surface-secondary: #252526;
+  --surface-tertiary: #2d2d30;
+  --surface-hover: #3e3e42;
+  --surface-active: #094771;
+  
+  --text-primary: #cccccc;
+  --text-secondary: #9cdcfe;
+  --text-muted: #858585;
+  --text-disabled: #6e6e6e;
+  
+  --border-primary: #3e3e42;
+  --border-subtle: #2d2d30;
+  --border-active: #007acc;
+  
+  --accent-primary: #007acc;
+  --accent-hover: #1177bb;
+  --accent-subtle: #094771;
 }
+
+/* Font size presets */
+.font-size-small { --font-base: 12px; }
+.font-size-medium { --font-base: 14px; }
+.font-size-large { --font-base: 16px; }
 
 * {
   box-sizing: border-box;
@@ -19,71 +43,116 @@
 html, body {
   margin: 0;
   padding: 0;
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
-  background-color: var(--terminal-bg);
-  color: var(--terminal-fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+  background-color: transparent;
+  color: var(--text-primary);
   overflow: hidden;
+  font-size: var(--font-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
+/* Root container for rounded corners */
+#root {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+/* Custom scrollbar - minimal IDE style */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--terminal-bg);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--terminal-dim);
-  border-radius: 4px;
+  background: var(--border-primary);
+  border-radius: 0;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--terminal-accent);
+  background: var(--text-muted);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Selection styling */
 ::selection {
-  background-color: var(--terminal-accent);
-  color: var(--terminal-bg);
+  background-color: var(--accent-subtle);
+  color: var(--text-primary);
 }
 
-/* Markdown styles */
+/* Focus outline - IDE style */
+:focus-visible {
+  outline: 1px solid var(--border-active);
+  outline-offset: -1px;
+}
+
+/* Remove glossy effects from select dropdowns */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: none;
+  background-color: var(--surface-bg);
+  border-radius: 0;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+/* Markdown styles - clean IDE look */
 .markdown {
   line-height: 1.6;
 }
 
 .markdown pre {
-  background: #1a1a1a;
-  padding: 1rem;
-  border-radius: 4px;
+  background: var(--surface-secondary);
+  padding: 12px 16px;
   overflow-x: auto;
-  border: 1px solid var(--terminal-border);
+  border: 1px solid var(--border-subtle);
+  margin: 8px 0;
+  font-family: 'SF Mono', 'SFMono-Regular', 'JetBrains Mono', 'Fira Code', Monaco, Consolas, monospace;
+  font-size: var(--font-xs);
+  line-height: 1.5;
 }
 
 .markdown code {
-  background: #1a1a1a;
-  padding: 0.2rem 0.4rem;
-  border-radius: 3px;
-  font-size: 0.9em;
+  background: var(--surface-secondary);
+  padding: 1px 4px;
+  font-family: 'SF Mono', 'SFMono-Regular', 'JetBrains Mono', 'Fira Code', Monaco, Consolas, monospace;
+  font-size: var(--font-xs);
+  color: #ce9178;
 }
 
 .markdown pre code {
   padding: 0;
   background: transparent;
+  color: var(--text-primary);
 }
 
 .markdown blockquote {
-  border-left: 3px solid var(--terminal-accent);
-  margin: 0;
-  padding-left: 1rem;
-  color: var(--terminal-dim);
+  border-left: 2px solid var(--accent-primary);
+  margin: 8px 0;
+  padding-left: 12px;
+  color: var(--text-muted);
 }
 
 .markdown a {
-  color: var(--terminal-accent);
+  color: var(--accent-primary);
   text-decoration: none;
 }
 
@@ -91,7 +160,30 @@ html, body {
   text-decoration: underline;
 }
 
-/* Blinking cursor */
+.markdown p {
+  margin: 6px 0;
+}
+
+.markdown ul, .markdown ol {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+
+.markdown li {
+  margin: 2px 0;
+}
+
+.markdown h1, .markdown h2, .markdown h3, .markdown h4 {
+  font-weight: 600;
+  margin: 12px 0 8px 0;
+  color: var(--text-primary);
+}
+
+.markdown h1 { font-size: var(--font-md); }
+.markdown h2 { font-size: calc(var(--font-base) * 1.1); }
+.markdown h3, .markdown h4 { font-size: var(--font-base); }
+
+/* Cursor blink for input */
 .cursor-blink {
   animation: blink 1s step-end infinite;
 }
@@ -102,10 +194,19 @@ html, body {
   }
 }
 
-/* Glassmorphism for floating elements */
-.glass {
-  background: rgba(13, 13, 13, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--terminal-border);
+/* Utility classes */
+.divide-h {
+  border-bottom: 1px solid var(--border-subtle);
 }
+
+.divide-v {
+  border-right: 1px solid var(--border-subtle);
+}
+
+/* Font size utility classes using CSS vars */
+.text-2xs { font-size: calc(var(--font-base) * 0.75); }
+.text-xs { font-size: var(--font-xs); }
+.text-sm { font-size: var(--font-sm); }
+.text-base { font-size: var(--font-base); }
+.text-md { font-size: var(--font-md); }
+.text-lg { font-size: var(--font-lg); }

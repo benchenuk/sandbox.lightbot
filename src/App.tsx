@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import ChatWindow from "./components/ChatWindow";
 import SettingsPanel from "./components/SettingsPanel";
@@ -7,7 +7,13 @@ import { useSidecar } from "./hooks/useSidecar";
 
 function App() {
   const [showSettings, setShowSettings] = useState(false);
+  const [fontSize, setFontSize] = useState<"small" | "medium" | "large">("medium");
   const { isReady, error, port: sidecarPort } = useSidecar();
+
+  // Apply font size class to document
+  useEffect(() => {
+    document.documentElement.className = `font-size-${fontSize}`;
+  }, [fontSize]);
 
   const isLoading = !isReady && !error;
 
@@ -22,7 +28,7 @@ function App() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-terminal-bg text-terminal-fg overflow-hidden">
+    <div className="h-screen flex flex-col bg-surface text-text overflow-hidden rounded-xl">
       {/* Title Bar */}
       <TitleBar
         onClose={handleClose}
@@ -38,16 +44,16 @@ function App() {
           {isLoading ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <div className="text-terminal-accent text-lg mb-2">
-                  <span className="inline-block animate-pulse">●</span>
-                  <span className="inline-block animate-pulse delay-75">●</span>
-                  <span className="inline-block animate-pulse delay-150">●</span>
+                <div className="flex items-center justify-center gap-1 text-text-muted mb-2">
+                  <span className="w-1.5 h-1.5 bg-text-muted animate-pulse" />
+                  <span className="w-1.5 h-1.5 bg-text-muted animate-pulse delay-75" />
+                  <span className="w-1.5 h-1.5 bg-text-muted animate-pulse delay-150" />
                 </div>
-                <p className="text-terminal-dim text-sm">
+                <p className="text-text-muted text-sm">
                   {error ? `Error: ${error}` : "Initializing LightBot..."}
                 </p>
                 {sidecarPort && (
-                  <p className="text-terminal-dim text-xs mt-2">
+                  <p className="text-text-disabled text-xs mt-1">
                     Connected on port {sidecarPort}
                   </p>
                 )}
@@ -60,8 +66,12 @@ function App() {
 
         {/* Settings Panel */}
         {showSettings && (
-          <div className="w-80 border-l border-terminal-border glass animate-in slide-in-from-right duration-200">
-            <SettingsPanel onClose={() => setShowSettings(false)} />
+          <div className="w-72 border-l border-border-subtle bg-surface-secondary animate-in slide-in-from-right duration-150">
+            <SettingsPanel 
+              onClose={() => setShowSettings(false)} 
+              fontSize={fontSize}
+              onFontSizeChange={setFontSize}
+            />
           </div>
         )}
       </div>

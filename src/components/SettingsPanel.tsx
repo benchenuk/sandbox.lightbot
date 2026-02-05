@@ -1,14 +1,14 @@
-import { X } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface SettingsPanelProps {
   onClose: () => void;
+  fontSize: "small" | "medium" | "large";
+  onFontSizeChange: (size: "small" | "medium" | "large") => void;
 }
 
 interface Settings {
-  provider: "ollama" | "openai";
+  apiBase: string;
   model: string;
-  baseUrl: string;
   apiKey: string;
   searchProvider: "duckduckgo" | "searxng";
   searchUrl: string;
@@ -17,9 +17,8 @@ interface Settings {
 }
 
 const defaultSettings: Settings = {
-  provider: "ollama",
+  apiBase: "http://localhost:11434",
   model: "llama3.2",
-  baseUrl: "http://localhost:11434",
   apiKey: "",
   searchProvider: "duckduckgo",
   searchUrl: "",
@@ -28,12 +27,11 @@ const defaultSettings: Settings = {
     "You are LightBot, a helpful AI assistant with web search capabilities.",
 };
 
-export default function SettingsPanel({ onClose }: SettingsPanelProps) {
+export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: SettingsPanelProps) {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [activeTab, setActiveTab] = useState<"general" | "llm" | "search">("general");
 
   useEffect(() => {
-    // Load settings from localStorage
     const saved = localStorage.getItem("lightbot-settings");
     if (saved) {
       try {
@@ -57,29 +55,28 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-terminal-bg">
+    <div className="h-full flex flex-col bg-surface-secondary text-sm">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-terminal-border">
-        <h2 className="text-terminal-fg font-medium">Settings</h2>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border-subtle">
+        <h2 className="text-text-primary font-medium">Settings</h2>
         <button
           onClick={onClose}
-          className="p-1.5 rounded text-terminal-dim hover:text-terminal-fg hover:bg-terminal-border transition-colors"
+          className="p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
         >
-          <X size={18} />
+          ×
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-terminal-border">
+      <div className="flex border-b border-border-subtle">
         {(["general", "llm", "search"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 text-sm capitalize transition-colors ${
-              activeTab === tab
-                ? "text-terminal-accent border-b-2 border-terminal-accent"
-                : "text-terminal-dim hover:text-terminal-fg"
-            }`}
+            className={`flex-1 py-2 text-xs uppercase tracking-wide transition-colors border-b-2 ${activeTab === tab
+                ? "text-text-primary border-accent bg-surface-tertiary"
+                : "text-text-muted border-transparent hover:text-text-primary hover:bg-surface-hover"
+              }`}
           >
             {tab}
           </button>
@@ -87,36 +84,56 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {activeTab === "general" && (
           <>
             <div>
-              <label className="block text-terminal-dim text-xs mb-1.5">
+              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
+                Font Size
+              </label>
+              <div className="flex gap-1">
+                {(["small", "medium", "large"] as const).map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => onFontSizeChange(size)}
+                    className={`flex-1 py-1.5 text-xs capitalize border transition-colors ${fontSize === size
+                        ? "border-accent bg-accent-subtle text-text-primary"
+                        : "border-border-primary text-text-muted hover:text-text-primary hover:bg-surface-hover"
+                      }`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
                 Global Hotkey
               </label>
               <input
                 type="text"
                 value={settings.hotkey}
                 onChange={(e) => updateSetting("hotkey", e.target.value)}
-                className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded 
-                         text-terminal-fg text-sm focus:outline-none focus:border-terminal-accent"
+                className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                         text-text-primary text-sm focus:outline-none focus:border-accent"
                 placeholder="e.g., Command+Shift+O"
               />
-              <p className="text-terminal-dim text-xs mt-1">
-                Restart required to apply hotkey changes
+              <p className="text-text-disabled text-xs mt-1">
+                Restart required to apply
               </p>
             </div>
 
             <div>
-              <label className="block text-terminal-dim text-xs mb-1.5">
+              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
                 System Prompt
               </label>
               <textarea
                 value={settings.systemPrompt}
                 onChange={(e) => updateSetting("systemPrompt", e.target.value)}
-                rows={4}
-                className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded 
-                         text-terminal-fg text-sm focus:outline-none focus:border-terminal-accent resize-none"
+                rows={5}
+                className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                         text-text-primary text-sm focus:outline-none focus:border-accent resize-none font-sans"
               />
             </div>
           </>
@@ -125,78 +142,57 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
         {activeTab === "llm" && (
           <>
             <div>
-              <label className="block text-terminal-dim text-xs mb-1.5">
-                Provider
+              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
+                API Base
               </label>
-              <select
-                value={settings.provider}
-                onChange={(e) =>
-                  updateSetting("provider", e.target.value as Settings["provider"])
-                }
-                className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded 
-                         text-terminal-fg text-sm focus:outline-none focus:border-terminal-accent"
-              >
-                <option value="ollama">Ollama (Local)</option>
-                <option value="openai">OpenAI (Remote)</option>
-              </select>
+              <input
+                type="text"
+                value={settings.apiBase}
+                onChange={(e) => updateSetting("apiBase", e.target.value)}
+                className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                         text-text-primary text-sm focus:outline-none focus:border-accent"
+                placeholder="http://localhost:11434"
+              />
+              <p className="text-text-disabled text-xs mt-1">
+                Ollama, OpenAI, or compatible API endpoint
+              </p>
             </div>
 
             <div>
-              <label className="block text-terminal-dim text-xs mb-1.5">
+              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
+                API Key (Optional)
+              </label>
+              <input
+                type="password"
+                value={settings.apiKey}
+                onChange={(e) => updateSetting("apiKey", e.target.value)}
+                className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                         text-text-primary text-sm focus:outline-none focus:border-accent"
+                placeholder="sk-... (leave blank for local models)"
+              />
+            </div>
+
+            <div>
+              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
                 Model
               </label>
               <input
                 type="text"
                 value={settings.model}
                 onChange={(e) => updateSetting("model", e.target.value)}
-                className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded 
-                         text-terminal-fg text-sm focus:outline-none focus:border-terminal-accent"
-                placeholder={
-                  settings.provider === "ollama" ? "llama3.2" : "gpt-4"
-                }
+                className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                         text-text-primary text-sm focus:outline-none focus:border-accent"
+                placeholder="llama3.2, gpt-4, etc."
               />
             </div>
 
-            <div>
-              <label className="block text-terminal-dim text-xs mb-1.5">
-                Base URL (Optional)
-              </label>
-              <input
-                type="text"
-                value={settings.baseUrl}
-                onChange={(e) => updateSetting("baseUrl", e.target.value)}
-                className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded 
-                         text-terminal-fg text-sm focus:outline-none focus:border-terminal-accent"
-                placeholder={
-                  settings.provider === "ollama"
-                    ? "http://localhost:11434"
-                    : "https://api.openai.com/v1"
-                }
-              />
-            </div>
-
-            {settings.provider === "openai" && (
-              <div>
-                <label className="block text-terminal-dim text-xs mb-1.5">
-                  API Key
-                </label>
-                <input
-                  type="password"
-                  value={settings.apiKey}
-                  onChange={(e) => updateSetting("apiKey", e.target.value)}
-                  className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded 
-                           text-terminal-fg text-sm focus:outline-none focus:border-terminal-accent"
-                  placeholder="sk-..."
-                />
-              </div>
-            )}
           </>
         )}
 
         {activeTab === "search" && (
           <>
             <div>
-              <label className="block text-terminal-dim text-xs mb-1.5">
+              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
                 Search Provider
               </label>
               <select
@@ -207,8 +203,8 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
                     e.target.value as Settings["searchProvider"]
                   )
                 }
-                className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded 
-                         text-terminal-fg text-sm focus:outline-none focus:border-terminal-accent"
+                className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                         text-text-primary text-sm focus:outline-none focus:border-accent"
               >
                 <option value="duckduckgo">DuckDuckGo</option>
                 <option value="searxng">SearXNG</option>
@@ -217,15 +213,15 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
 
             {settings.searchProvider === "searxng" && (
               <div>
-                <label className="block text-terminal-dim text-xs mb-1.5">
+                <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
                   SearXNG Instance URL
                 </label>
                 <input
                   type="text"
                   value={settings.searchUrl}
                   onChange={(e) => updateSetting("searchUrl", e.target.value)}
-                  className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded 
-                           text-terminal-fg text-sm focus:outline-none focus:border-terminal-accent"
+                  className="w-full px-2 py-1.5 bg-surface border border-border-primary
+                           text-text-primary text-sm focus:outline-none focus:border-accent"
                   placeholder="http://localhost:8080"
                 />
               </div>
@@ -235,11 +231,11 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-terminal-border">
+      <div className="p-3 border-t border-border-subtle">
         <button
           onClick={handleSave}
-          className="w-full py-2 bg-terminal-accent text-terminal-bg rounded-lg 
-                   font-medium hover:bg-terminal-accent/90 transition-colors"
+          className="w-full py-1.5 bg-accent text-white text-sm
+                   hover:bg-accent-hover transition-colors font-medium"
         >
           Save Settings
         </button>
