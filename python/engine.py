@@ -67,10 +67,11 @@ class ChatEngine:
     
     async def _rewrite_query(self, message: str, history: List[ChatMessage]) -> str:
         """Rewrite the user query using conversation history for better search results."""
+        logger.info(f"[EVENT] Query rewrite check - history_size={len(history)}")
         if not history:
             return message
         
-        logger.info("[EVENT] Query rewrite started")
+        logger.info(f"[EVENT] Query rewrite started using model: {self.fast_model}")
         # Format history for prompt
         history_str = "\n".join([f"{m.role.value}: {m.content}" for m in history])
         prompt = CONDENSE_QUESTION_PROMPT.format(

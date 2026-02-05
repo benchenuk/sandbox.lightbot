@@ -27,7 +27,7 @@ class SearchTool:
     ) -> list[dict[str, Any]]:
         """Search using DuckDuckGo."""
         try:
-            from duckduckgo_search import DDGS
+            from ddgs import DDGS
             
             results = []
             with DDGS() as ddgs:
@@ -39,7 +39,7 @@ class SearchTool:
                     })
             return results
         except ImportError:
-            return [{"error": "duckduckgo_search not installed"}]
+            return [{"error": "ddgs not installed"}]
         except Exception as e:
             return [{"error": str(e)}]
     

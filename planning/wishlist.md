@@ -7,4 +7,4 @@
 - [x] Search provider may be configurable and supports DDG and SearXNG. 
 - [x] Menubar access
 - [x] Global hotkey, configurable, to bring up the chat window
-
+- [ ] Expandable and resizable input message box. With arrow at the end of the box, once clicked, the box pops taller (buttons remain the the bottom) and also becomes resizable. 
