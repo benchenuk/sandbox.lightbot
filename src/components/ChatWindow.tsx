@@ -3,9 +3,6 @@ import { Send, Square, Trash2 } from "lucide-react";
 import { useChat } from "../hooks/useChat";
 import MessageItem from "./MessageItem";
 
-// Build timestamp - changes with every build
-const BUILD_TIMESTAMP = "2026-02-05 15:10";
-
 interface ChatWindowProps {
   apiPort: number | null;
 }
@@ -64,12 +61,6 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
 
       {/* Input Area */}
       <div className="border-t border-border-subtle bg-surface-secondary">
-        {/* Build info bar */}
-        <div className="px-3 pt-1.5 flex items-center justify-between">
-          <span className="text-2xs text-text-disabled font-mono">BUILD: {BUILD_TIMESTAMP}</span>
-          <span className="text-2xs text-accent font-mono">IDE-MODE</span>
-        </div>
-
         <form onSubmit={handleSubmit} className="p-3 flex gap-2">
           <div className="flex-1 relative">
             <input

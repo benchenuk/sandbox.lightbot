@@ -7,5 +7,4 @@
 - [x] Search provider may be configurable and supports DDG and SearXNG. 
 - [x] Menubar access
 - [x] Global hotkey, configurable, to bring up the chat window
-- [x] Web search toggle "Auto", "Off", "On". 
 

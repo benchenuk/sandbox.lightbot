@@ -18,11 +18,12 @@
     - [x] Implement Ephemeral Memory (In-memory Chat History)
     - [x] Integrate Chat Logic & Search (Query Rewriting Pipeline)
 - [ ] Frontend Core (React/Tauri)
-    - [ ] Basic Chat UI Layout (Finalizing TUI Style)
-    - [ ] Markdown Rendering & Copy-to-Clipboard
-    - [ ] Settings Page (LLM Selection, Search Providers, Hotkeys)
-- [x] Web Search Capability ✅ COMPLETE
+    - [x] Basic Chat UI Layout (Finalizing TUI Style)
+    - [x] Markdown Rendering & Copy-to-Clipboard
+    - [x] Settings Page (LLM Selection, Search Providers, Hotkeys)
+- [x] Web Search Capability
     - [x] Integrate Search Tool (DuckDuckGo, SearXNG)
+    - [ ] UI toggle for web search options
     - [x] Connect Search to Chat Logic (Query Rewrite Pipeline)
 - [ ] Packaging and Distribution
     - [x] PyInstaller sidecar bundling

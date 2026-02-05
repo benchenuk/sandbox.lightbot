@@ -20,8 +20,9 @@
         "resizable": true,
         "fullscreen": false,
         "visible": false,
-        "transparent": true,
-        "decorations": false,
+        "transparent": false,
+        "decorations": true,
+        "titleBarStyle": "Visible",
         "alwaysOnTop": false,
         "center": true,
         "shadow": true
@@ -29,7 +30,9 @@
     ],
     "security": {
       "csp": null,
-      "capabilities": ["default"]
+      "capabilities": [
+        "default"
+      ]
     },
     "trayIcon": {
       "iconPath": "icons/icon.png",
@@ -39,7 +42,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["dmg", "app"],
+    "targets": [
+      "dmg",
+      "app"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -48,7 +54,9 @@
       "icons/icon.ico"
     ],
     "resources": [],
-    "externalBin": ["bin/python-sidecar"],
+    "externalBin": [
+      "bin/python-sidecar"
+    ],
     "copyright": "",
     "category": "DeveloperTool",
     "shortDescription": "Lightweight AI Chat Bot",

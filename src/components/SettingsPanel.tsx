@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 
+// Build timestamp - changes with every build
+const BUILD_TIMESTAMP = "2026-02-05 15:10";
+
 interface SettingsPanelProps {
   onClose: () => void;
   fontSize: "small" | "medium" | "large";
@@ -74,8 +77,8 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: S
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex-1 py-2 text-xs uppercase tracking-wide transition-colors border-b-2 ${activeTab === tab
-                ? "text-text-primary border-accent bg-surface-tertiary"
-                : "text-text-muted border-transparent hover:text-text-primary hover:bg-surface-hover"
+              ? "text-text-primary border-accent bg-surface-tertiary"
+              : "text-text-muted border-transparent hover:text-text-primary hover:bg-surface-hover"
               }`}
           >
             {tab}
@@ -86,45 +89,53 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: S
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {activeTab === "general" && (
-          <>
-            <div>
-              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
-                Font Size
-              </label>
-              <div className="flex gap-1">
-                {(["small", "medium", "large"] as const).map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => onFontSizeChange(size)}
-                    className={`flex-1 py-1.5 text-xs capitalize border transition-colors ${fontSize === size
+          <div className="flex flex-col h-full">
+            <div className="space-y-3">
+              <div>
+                <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
+                  Font Size
+                </label>
+                <div className="flex gap-1">
+                  {(["small", "medium", "large"] as const).map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => onFontSizeChange(size)}
+                      className={`flex-1 py-1.5 text-xs capitalize border transition-colors ${fontSize === size
                         ? "border-accent bg-accent-subtle text-text-primary"
                         : "border-border-primary text-text-muted hover:text-text-primary hover:bg-surface-hover"
-                      }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+                        }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
+                  Global Hotkey
+                </label>
+                <input
+                  type="text"
+                  value={settings.hotkey}
+                  onChange={(e) => updateSetting("hotkey", e.target.value)}
+                  className="w-full px-2 py-1.5 bg-surface border border-border-subtle
+                           text-text-primary text-sm focus:outline-none focus:border-accent"
+                  placeholder="e.g., Command+Shift+O"
+                />
+                <p className="text-text-disabled text-xs mt-1">
+                  Restart required to apply
+                </p>
               </div>
             </div>
 
-            <div>
-              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
-                Global Hotkey
-              </label>
-              <input
-                type="text"
-                value={settings.hotkey}
-                onChange={(e) => updateSetting("hotkey", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
-                         text-text-primary text-sm focus:outline-none focus:border-accent"
-                placeholder="e.g., Command+Shift+O"
-              />
-              <p className="text-text-disabled text-xs mt-1">
-                Restart required to apply
-              </p>
+            {/* Build Info - at bottom of General tab */}
+            <div className="mt-auto pt-4">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-2xs text-text-disabled font-mono">BUILD: {BUILD_TIMESTAMP}</span>
+              </div>
             </div>
-
-          </>
+          </div>
         )}
 
         {activeTab === "llm" && (

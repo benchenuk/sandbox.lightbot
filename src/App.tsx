@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import ChatWindow from "./components/ChatWindow";
 import SettingsPanel from "./components/SettingsPanel";
 import TitleBar from "./components/TitleBar";
@@ -17,22 +16,10 @@ function App() {
 
   const isLoading = !isReady && !error;
 
-  const handleClose = async () => {
-    const window = getCurrentWindow();
-    await window.hide();
-  };
-
-  const handleMinimize = async () => {
-    const window = getCurrentWindow();
-    await window.minimize();
-  };
-
   return (
-    <div className="h-screen flex flex-col bg-surface text-text overflow-hidden rounded-xl">
+    <div className="h-screen flex flex-col bg-surface text-text overflow-hidden">
       {/* Title Bar */}
       <TitleBar
-        onClose={handleClose}
-        onMinimize={handleMinimize}
         onSettings={() => setShowSettings(!showSettings)}
         showSettings={showSettings}
       />
@@ -67,8 +54,8 @@ function App() {
         {/* Settings Panel */}
         {showSettings && (
           <div className="w-72 border-l border-border-subtle bg-surface-secondary animate-in slide-in-from-right duration-150">
-            <SettingsPanel 
-              onClose={() => setShowSettings(false)} 
+            <SettingsPanel
+              onClose={() => setShowSettings(false)}
               fontSize={fontSize}
               onFontSizeChange={setFontSize}
             />
