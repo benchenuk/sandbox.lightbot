@@ -10,6 +10,15 @@ struct SidecarState {
     error: Mutex<Option<String>>,
 }
 
+/// Decode PNG bytes to RGBA image data
+fn load_png_icon(bytes: &[u8]) -> tauri::image::Image<'static> {
+    let img = image::load_from_memory_with_format(bytes, image::ImageFormat::Png)
+        .expect("Icon should be valid PNG");
+    let rgba = img.to_rgba8();
+    let (width, height) = rgba.dimensions();
+    tauri::image::Image::new_owned(rgba.into_raw(), width, height)
+}
+
 /// Load .env file from project root (dev) or user home (production)
 fn load_dotenv() {
     // Try project root first (development)
@@ -53,7 +62,8 @@ fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()>
 
     let menu = Menu::with_items(app, &[&show_i, &separator, &quit_i])?;
 
-    let icon = app.default_window_icon().cloned().expect("Failed to get default window icon. Please ensure icons are generated.");
+    // Load tray icon (32x32 for standard, scales on retina)
+    let icon = load_png_icon(include_bytes!("../icons/32x32.png"));
 
     let _tray = TrayIconBuilder::new()
         .icon(icon)

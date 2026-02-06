@@ -156,6 +156,31 @@ kill -9 PID
 ### "ModuleNotFoundError: No module named 'engine'"
 This usually happens if `PyInstaller` didn't include the local modules. Ensure you use the updated `./scripts/build-sidecar.sh` which includes `--paths python`.
 
+### Tray Icon Shows White Square
+**Problem**: The system tray icon appears as a blank white square instead of the app icon.
+
+**Root Cause**: `icon_as_template(true)` tells macOS to treat the icon as a monochrome template image, which tints it white. This only works correctly with black silhouette icons designed as templates.
+
+**Solution**: 
+```rust
+// ❌ Wrong - causes white square with colored icons
+TrayIconBuilder::new()
+    .icon(icon)
+    .icon_as_template(true)  // Only use with black silhouette icons
+
+// ✅ Correct - shows actual colored icon
+TrayIconBuilder::new()
+    .icon(icon)
+    // icon_as_template omitted or set to false
+```
+
+**Trade-offs**:
+| Setting | Appearance | Dark Mode Support |
+|---------|-----------|-------------------|
+| `icon_as_template(true)` | Requires black silhouette icon | ✅ Native adaptation |
+| `icon_as_template(false)` | Shows actual icon colors | ❌ No auto-adaptation |
+
+
 ---
 
 ## API Endpoints

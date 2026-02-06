@@ -10,4 +10,4 @@
 9. [x] Redesign API key in settings, over API call. 
 10. [x] Query rewrite is not using LLM_FASTL_MODEL, or it's not picking up the right setting. 
 11. [x] Hardcoded build info
-12. [ ] white icon on menu bar
+12. [x] white icon on menu bar
