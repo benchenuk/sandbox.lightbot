@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 
-// Build timestamp - changes with every build
-const BUILD_TIMESTAMP = "2026-02-05 15:10";
-
 interface SettingsPanelProps {
   onClose: () => void;
   fontSize: "small" | "medium" | "large";
@@ -213,9 +210,11 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
             </div>
 
             {/* Build Info - at bottom of General tab */}
-            <div className="mt-auto pt-4">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-2xs text-text-disabled font-mono">BUILD: {BUILD_TIMESTAMP}</span>
+            <div className="mt-auto pt-4 border-t border-border-subtle/30">
+              <div className="flex items-center opacity-40 hover:opacity-100 transition-opacity">
+                <span className="text-[10px] text-text-muted font-mono tracking-tighter uppercase">
+                  BUILD: {__APP_BUILD_ID__}
+                </span>
               </div>
             </div>
           </div>

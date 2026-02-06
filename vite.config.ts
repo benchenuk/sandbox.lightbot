@@ -1,9 +1,23 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+// Generate build ID (simple timestamp for now)
+const getBuildId = () => {
+  const now = new Date();
+  return now.getFullYear().toString() +
+    (now.getMonth() + 1).toString().padStart(2, "0") +
+    now.getDate().toString().padStart(2, "0") +
+    now.getHours().toString().padStart(2, "0") +
+    now.getMinutes().toString().padStart(2, "0");
+};
+
+const buildId = getBuildId();
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
+  define: {
+    __APP_BUILD_ID__: JSON.stringify(buildId),
+  },
   plugins: [react()],
   resolve: {
     alias: {
