@@ -1,13 +1,17 @@
-import { Settings } from "lucide-react";
+import { Settings, Pin } from "lucide-react";
 
 interface TitleBarProps {
   onSettings: () => void;
   showSettings: boolean;
+  isPinned: boolean;
+  onPin: () => void;
 }
 
 export default function TitleBar({
   onSettings,
   showSettings,
+  isPinned,
+  onPin,
 }: TitleBarProps) {
   return (
     <div
@@ -30,6 +34,16 @@ export default function TitleBar({
           title="Settings"
         >
           <Settings size={14} />
+        </button>
+        <button
+          onClick={onPin}
+          className={`p-1.5 transition-colors ${isPinned
+            ? "text-accent bg-accent-subtle"
+            : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
+            }`}
+          title={isPinned ? "Unpin window" : "Pin window (Always on Top)"}
+        >
+          <Pin size={14} className={isPinned ? "fill-accent/20" : ""} />
         </button>
       </div>
     </div>

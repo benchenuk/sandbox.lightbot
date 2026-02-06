@@ -8,3 +8,5 @@
 7. [x] App window can ba dragged and moved around like normal app. 
 8. [x] Move the build info to the bottom of "General" setting page. 
 9. [ ] Redesign API key in settings, over API call. 
+10. [x] Query rewrite is not using LLM_FASTL_MODEL, or it's not picking up the right setting. 
+11. [ ] Handle <think> reasoning from LLM output.

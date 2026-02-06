@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import ChatWindow from "./components/ChatWindow";
 import SettingsPanel from "./components/SettingsPanel";
 import TitleBar from "./components/TitleBar";
@@ -6,6 +7,7 @@ import { useSidecar } from "./hooks/useSidecar";
 
 function App() {
   const [showSettings, setShowSettings] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">("medium");
   const { isReady, error, port: sidecarPort } = useSidecar();
 
@@ -13,6 +15,31 @@ function App() {
   useEffect(() => {
     document.documentElement.className = `font-size-${fontSize}`;
   }, [fontSize]);
+
+  // Sync pin state with actual window state
+  useEffect(() => {
+    const syncPinState = async () => {
+      try {
+        const window = getCurrentWindow();
+        const pinned = await window.isAlwaysOnTop();
+        setIsPinned(pinned);
+      } catch (err) {
+        console.error("Failed to sync pin state:", err);
+      }
+    };
+    syncPinState();
+  }, []);
+
+  const handlePin = async () => {
+    try {
+      const window = getCurrentWindow();
+      const nextPinned = !isPinned;
+      await window.setAlwaysOnTop(nextPinned);
+      setIsPinned(nextPinned);
+    } catch (err) {
+      console.error("Failed to set always on top:", err);
+    }
+  };
 
   const isLoading = !isReady && !error;
 
@@ -22,6 +49,8 @@ function App() {
       <TitleBar
         onSettings={() => setShowSettings(!showSettings)}
         showSettings={showSettings}
+        isPinned={isPinned}
+        onPin={handlePin}
       />
 
       {/* Main Content */}

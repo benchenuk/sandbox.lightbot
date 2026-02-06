@@ -1,9 +1,8 @@
 use std::process::Child;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, Runtime};
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
 
 struct SidecarState {
     port: Mutex<u16>,
@@ -12,7 +11,10 @@ struct SidecarState {
 
 fn toggle_window_visibility<R: Runtime>(app: &tauri::AppHandle<R>) {
     if let Some(window) = app.get_webview_window("main") {
-        if window.is_visible().unwrap_or(false) {
+        let is_visible = window.is_visible().unwrap_or(false);
+        let is_focused = window.is_focused().unwrap_or(false);
+
+        if is_visible && is_focused {
             let _ = window.hide();
         } else {
             let _ = window.show();
@@ -54,13 +56,17 @@ fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()>
     Ok(())
 }
 
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
+
 fn setup_global_hotkey<R: Runtime>(app: &tauri::AppHandle<R>) -> Result<(), Box<dyn std::error::Error>> {
     // Command+Shift+O as default hotkey
     let shortcut: Shortcut = "Command+Shift+O".parse().expect("Invalid shortcut");
 
     app.global_shortcut()
-        .on_shortcut(shortcut, move |app, _shortcut, _event| {
-            toggle_window_visibility(app);
+        .on_shortcut(shortcut, move |app, _shortcut, event| {
+            if event.state() == ShortcutState::Pressed {
+                toggle_window_visibility(app);
+            }
         })?;
 
     Ok(())

@@ -10,11 +10,10 @@ function SearchToggle({ mode, onChange }: { mode: SearchMode; onChange: (mode: S
     <button
       type="button"
       onClick={() => onChange(isOn ? "off" : "on")}
-      className={`w-9 h-9 shrink-0 flex items-center justify-center transition-colors ${
-        isOn
-          ? "bg-accent/10 text-accent border border-accent"
-          : "bg-surface text-text-muted border border-border-subtle hover:text-text-primary hover:bg-surface-hover"
-      }`}
+      className={`w-9 h-9 shrink-0 flex items-center justify-center transition-colors ${isOn
+        ? "bg-accent/10 text-accent border border-accent"
+        : "bg-surface text-text-muted border border-border-subtle hover:text-text-primary hover:bg-surface-hover"
+        }`}
       title={isOn ? "Web search: On" : "Web search: Off"}
     >
       <Globe size={16} />
@@ -59,10 +58,13 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-text-muted">
-            <div className="text-3xl mb-3 opacity-30 font-mono">⌘</div>
+            <div className="text-3xl mb-3 opacity-30 font-mono">💡</div>
             <p className="text-md font-medium">LightBot</p>
             <p className="text-xs mt-2 opacity-60">
-              Press Command+Shift+O to toggle from anywhere
+              Press ⌘+⇧+O to toggle from anywhere
+            </p>
+            <p className="text-xs mt-2 opacity-60">
+              Chat session is ephemeral
             </p>
           </div>
         ) : (
