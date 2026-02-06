@@ -16,7 +16,26 @@ function App() {
     }
     return "medium";
   });
+  const [hotkey, setHotkey] = useState("Command+Shift+O");
   const { isReady, error, port: sidecarPort } = useSidecar();
+
+  // Fetch initial hotkey from backend
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (sidecarPort) {
+        try {
+          const response = await fetch(`http://127.0.0.1:${sidecarPort}/settings`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.hotkey) setHotkey(data.hotkey);
+          }
+        } catch (err) {
+          console.error("Failed to fetch settings:", err);
+        }
+      }
+    };
+    fetchSettings();
+  }, [sidecarPort]);
 
   // Apply font size class to document and save to localStorage
   useEffect(() => {
@@ -84,7 +103,7 @@ function App() {
               </div>
             </div>
           ) : (
-            <ChatWindow apiPort={sidecarPort} />
+            <ChatWindow apiPort={sidecarPort} hotkey={hotkey} />
           )}
         </div>
 

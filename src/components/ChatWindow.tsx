@@ -23,15 +23,24 @@ function SearchToggle({ mode, onChange }: { mode: SearchMode; onChange: (mode: S
 
 interface ChatWindowProps {
   apiPort: number | null;
+  hotkey: string;
 }
 
-export default function ChatWindow({ apiPort }: ChatWindowProps) {
+export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
   const [searchMode, setSearchMode] = useState<SearchMode>("off");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const { messages, isStreaming, error, sendMessage, stopStreaming, clearMessages } =
     useChat({ apiPort, searchMode });
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Format hotkey for display
+  const displayHotkey = hotkey
+    .replace(/Command|Cmd/gi, "⌘")
+    .replace(/Shift/gi, "⇧")
+    .replace(/Option|Alt/gi, "⌥")
+    .replace(/Control|Ctrl/gi, "⌃")
+    .replace(/\+/g, "");
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -61,7 +70,7 @@ export default function ChatWindow({ apiPort }: ChatWindowProps) {
             <div className="text-3xl mb-3 opacity-30 font-mono">💡</div>
             <p className="text-md font-medium">LightBot</p>
             <p className="text-xs mt-2 opacity-60">
-              Press ⌘+⇧+O to toggle from anywhere
+              Press {displayHotkey} to toggle from anywhere
             </p>
             <p className="text-xs mt-2 opacity-60">
               Chat session is ephemeral
