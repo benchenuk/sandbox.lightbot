@@ -7,6 +7,7 @@ interface SettingsPanelProps {
   onClose: () => void;
   fontSize: "small" | "medium" | "large";
   onFontSizeChange: (size: "small" | "medium" | "large") => void;
+  apiPort: number | null;
 }
 
 interface Settings {
@@ -30,23 +31,89 @@ const defaultSettings: Settings = {
     "You are LightBot, a helpful AI assistant with web search capabilities.",
 };
 
-export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: SettingsPanelProps) {
+export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, apiPort }: SettingsPanelProps) {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [activeTab, setActiveTab] = useState<"general" | "llm" | "search">("general");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Fetch settings from backend on mount
   useEffect(() => {
-    const saved = localStorage.getItem("lightbot-settings");
-    if (saved) {
-      try {
-        setSettings({ ...defaultSettings, ...JSON.parse(saved) });
-      } catch {
-        // Ignore parse error
+    const fetchSettings = async () => {
+      if (!apiPort) {
+        setLoading(false);
+        return;
       }
-    }
-  }, []);
+      
+      try {
+        const response = await fetch(`http://127.0.0.1:${apiPort}/settings`);
+        if (!response.ok) throw new Error("Failed to fetch settings");
+        
+        const backendSettings = await response.json();
+        
+        // Merge backend settings with defaults
+        setSettings({
+          apiBase: backendSettings.base_url || defaultSettings.apiBase,
+          model: backendSettings.model || defaultSettings.model,
+          apiKey: backendSettings.api_key || defaultSettings.apiKey,
+          searchProvider: (backendSettings.search_provider as Settings["searchProvider"]) || defaultSettings.searchProvider,
+          searchUrl: backendSettings.search_url || defaultSettings.searchUrl,
+          hotkey: backendSettings.hotkey || defaultSettings.hotkey,
+          systemPrompt: backendSettings.system_prompt || defaultSettings.systemPrompt,
+        });
+        setError(null);
+      } catch (err) {
+        setError("Failed to load settings from backend");
+        // Fallback to localStorage
+        const saved = localStorage.getItem("lightbot-settings");
+        if (saved) {
+          try {
+            setSettings({ ...defaultSettings, ...JSON.parse(saved) });
+          } catch {
+            // Ignore parse error
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleSave = () => {
-    localStorage.setItem("lightbot-settings", JSON.stringify(settings));
+    fetchSettings();
+  }, [apiPort]);
+
+  const handleSave = async () => {
+    if (apiPort) {
+      try {
+        // Map UI settings to backend format
+        const backendSettings = {
+          model: settings.model,
+          fast_model: settings.model,
+          base_url: settings.apiBase,
+          api_key: settings.apiKey,
+          system_prompt: settings.systemPrompt,
+          search_provider: settings.searchProvider,
+          search_url: settings.searchUrl,
+        };
+
+        const response = await fetch(`http://127.0.0.1:${apiPort}/settings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(backendSettings),
+        });
+
+        if (!response.ok) throw new Error("Failed to save settings");
+        
+        // Also save to localStorage as backup
+        localStorage.setItem("lightbot-settings", JSON.stringify(settings));
+        setError(null);
+      } catch (err) {
+        setError("Failed to save settings to backend");
+        return;
+      }
+    } else {
+      // Fallback to localStorage only
+      localStorage.setItem("lightbot-settings", JSON.stringify(settings));
+    }
     onClose();
   };
 
@@ -56,6 +123,16 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: S
   ) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
+
+  if (loading) {
+    return (
+      <div className="h-full flex flex-col bg-surface-secondary text-sm">
+        <div className="flex-1 flex items-center justify-center">
+          <span className="text-text-muted">Loading settings...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-surface-secondary text-sm">
@@ -69,6 +146,15 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange }: S
           ×
         </button>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="px-3 pt-2">
+          <div className="px-3 py-1.5 bg-error/10 border border-error/30 text-error text-xs">
+            {error}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex border-b border-border-subtle">

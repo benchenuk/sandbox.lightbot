@@ -7,3 +7,4 @@
 6. [ ] Integrate backend with LLM settings on the UI. UI will alwayws load from .env, but once edited on the UI, .env will be overwritten. Does this work once bundled up as standalone app? 
 7. [x] App window can ba dragged and moved around like normal app. 
 8. [x] Move the build info to the bottom of "General" setting page. 
+9. [ ] Redesign API key in settings, over API call. 

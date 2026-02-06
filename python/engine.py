@@ -26,13 +26,17 @@ class ChatEngine:
         self.fast_model: str = os.getenv("LLM_FAST_MODEL", self.model)
         self.base_url: str | None = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
         self.api_key: str | None = os.getenv("LLM_API_KEY", None)
-        self.system_prompt: str = self._default_system_prompt()
+        self.system_prompt: str = os.getenv("LLM_SYSTEM_PROMPT", self._default_system_prompt())
+        
+        # Search settings
+        self.search_provider: str = os.getenv("SEARCH_PROVIDER", "duckduckgo")
+        self.search_url: str = os.getenv("SEARCH_URL", "")
         
         # Ephemeral memory: session_id -> list of messages
         self._memory: dict[str, list[ChatMessage]] = defaultdict(list)
         
-        # Search tool
-        self.search_tool = SearchTool()
+        # Search tool - initialized with env settings
+        self.search_tool = SearchTool(provider=self.search_provider, base_url=self.search_url or None)
         
         # Initialize LLMs
         self.llm = None
@@ -91,7 +95,7 @@ class ChatEngine:
 
     async def _get_search_context(self, query: str) -> str:
         """Perform search and format results as context."""
-        logger.info("[EVENT] Web search started")
+        logger.info(f"[EVENT] Web search started via {self.search_tool.display_name}: {query}")
         results = await self.search_tool.search(query)
         logger.info(f"[EVENT] Web search completed: {len(results)} results")
         if not results:
@@ -104,7 +108,9 @@ class ChatEngine:
             line = f"[{i}] {r['title']}\nURL: {r['url']}\nSnippet: {r['snippet']}\n"
             context_lines.append(line)
         
-        return "\n".join(context_lines) if context_lines else "No valid search results."
+        context = "\n".join(context_lines) if context_lines else "No valid search results."
+        # logger.info(f"[DEBUG] Search context sent to LLM:\n{context}")
+        return context
 
     async def chat(self, message: str, session_id: str | None = None, search_mode: str = "off") -> str:
         """Send a message and get a response."""
@@ -154,7 +160,7 @@ class ChatEngine:
             standalone_query = await self._rewrite_query(message, history)
             search_context = await self._get_search_context(standalone_query)
             system_p = SEARCH_ANSWER_PROMPT.format(search_results=search_context)
-            yield f"🔍 Searching for: {standalone_query}...\n\n"
+            yield f"🔍 Search {self.search_tool.display_name} for: {standalone_query}...\n\n"
         
         # Build messages
         messages = [ChatMessage(role=MessageRole.SYSTEM, content=system_p)]
@@ -190,6 +196,8 @@ class ChatEngine:
             "fast_model": self.fast_model,
             "base_url": self.base_url,
             "system_prompt": self.system_prompt,
+            "search_provider": self.search_provider,
+            "search_url": self.search_url,
         }
     
     def update_settings(self, settings: dict):
@@ -204,6 +212,12 @@ class ChatEngine:
             self.api_key = settings["api_key"]
         if "system_prompt" in settings:
             self.system_prompt = settings["system_prompt"]
+        if "search_provider" in settings:
+            self.search_provider = settings["search_provider"]
+            self.search_tool.update_settings(provider=settings["search_provider"])
+        if "search_url" in settings:
+            self.search_url = settings["search_url"]
+            self.search_tool.update_settings(base_url=settings["search_url"])
         
         self._init_llms()
 

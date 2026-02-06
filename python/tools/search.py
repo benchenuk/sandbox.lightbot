@@ -12,6 +12,11 @@ class SearchTool:
     def __init__(self, provider: str = "duckduckgo", base_url: str | None = None):
         self.provider = provider
         self.base_url = base_url
+
+    @property
+    def display_name(self) -> str:
+        """Return human-readable provider name."""
+        return "DuckDuckGo" if self.provider == "duckduckgo" else "SearXNG"
     
     async def search(self, query: str, max_results: int = 5) -> list[dict[str, Any]]:
         """Perform a web search and return results."""
@@ -66,7 +71,7 @@ class SearchTool:
                         {
                             "title": r.get("title", ""),
                             "url": r.get("url", ""),
-                            "snippet": r.get("content", ""),
+                            "snippet": r.get("content") or r.get("snippet") or "",
                         }
                         for r in results
                     ]

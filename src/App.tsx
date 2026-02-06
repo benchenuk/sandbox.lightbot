@@ -58,6 +58,7 @@ function App() {
               onClose={() => setShowSettings(false)}
               fontSize={fontSize}
               onFontSizeChange={setFontSize}
+              apiPort={sidecarPort}
             />
           </div>
         )}

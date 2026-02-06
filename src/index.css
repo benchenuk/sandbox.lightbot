@@ -6,41 +6,54 @@
 :root {
   /* Font size scale - change base to adjust all */
   --font-base: 14px;
-  --font-xs: calc(var(--font-base) * 0.85);   /* ~12px */
-  --font-sm: var(--font-base);                /* 14px */
-  --font-md: calc(var(--font-base) * 1.15);   /* ~16px */
-  --font-lg: calc(var(--font-base) * 1.3);    /* ~18px */
-  
+  --font-xs: calc(var(--font-base) * 0.85);
+  /* ~12px */
+  --font-sm: var(--font-base);
+  /* 14px */
+  --font-md: calc(var(--font-base) * 1.15);
+  /* ~16px */
+  --font-lg: calc(var(--font-base) * 1.3);
+  /* ~18px */
+
   --surface-bg: #1e1e1e;
   --surface-secondary: #252526;
   --surface-tertiary: #2d2d30;
   --surface-hover: #3e3e42;
-  --surface-active: #094771;
-  
+  --surface-active: #3e74a8;
+
   --text-primary: #cccccc;
   --text-secondary: #9cdcfe;
   --text-muted: #858585;
   --text-disabled: #6e6e6e;
-  
+
   --border-primary: #3e3e42;
   --border-subtle: #2d2d30;
   --border-active: #007acc;
-  
+
   --accent-primary: #007acc;
   --accent-hover: #1177bb;
-  --accent-subtle: #094771;
+  --accent-subtle: #3e74a8;
 }
 
 /* Font size presets */
-.font-size-small { --font-base: 12px; }
-.font-size-medium { --font-base: 14px; }
-.font-size-large { --font-base: 16px; }
+.font-size-small {
+  --font-base: 12px;
+}
+
+.font-size-medium {
+  --font-base: 14px;
+}
+
+.font-size-large {
+  --font-base: 16px;
+}
 
 * {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -165,7 +178,8 @@ select::-ms-expand {
   margin: 6px 0;
 }
 
-.markdown ul, .markdown ol {
+.markdown ul,
+.markdown ol {
   margin: 6px 0;
   padding-left: 20px;
 }
@@ -174,15 +188,27 @@ select::-ms-expand {
   margin: 2px 0;
 }
 
-.markdown h1, .markdown h2, .markdown h3, .markdown h4 {
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
   font-weight: 600;
   margin: 12px 0 8px 0;
   color: var(--text-primary);
 }
 
-.markdown h1 { font-size: var(--font-md); }
-.markdown h2 { font-size: calc(var(--font-base) * 1.1); }
-.markdown h3, .markdown h4 { font-size: var(--font-base); }
+.markdown h1 {
+  font-size: var(--font-md);
+}
+
+.markdown h2 {
+  font-size: calc(var(--font-base) * 1.1);
+}
+
+.markdown h3,
+.markdown h4 {
+  font-size: var(--font-base);
+}
 
 /* Cursor blink for input */
 .cursor-blink {
@@ -205,9 +231,26 @@ select::-ms-expand {
 }
 
 /* Font size utility classes using CSS vars */
-.text-2xs { font-size: calc(var(--font-base) * 0.75); }
-.text-xs { font-size: var(--font-xs); }
-.text-sm { font-size: var(--font-sm); }
-.text-base { font-size: var(--font-base); }
-.text-md { font-size: var(--font-md); }
-.text-lg { font-size: var(--font-lg); }
+.text-2xs {
+  font-size: calc(var(--font-base) * 0.75);
+}
+
+.text-xs {
+  font-size: var(--font-xs);
+}
+
+.text-sm {
+  font-size: var(--font-sm);
+}
+
+.text-base {
+  font-size: var(--font-base);
+}
+
+.text-md {
+  font-size: var(--font-md);
+}
+
+.text-lg {
+  font-size: var(--font-lg);
+}
