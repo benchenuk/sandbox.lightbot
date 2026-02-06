@@ -13,6 +13,7 @@ interface SettingsPanelProps {
 interface Settings {
   apiBase: string;
   model: string;
+  fastModel: string;
   apiKey: string;
   searchProvider: "duckduckgo" | "searxng";
   searchUrl: string;
@@ -23,6 +24,7 @@ interface Settings {
 const defaultSettings: Settings = {
   apiBase: "http://localhost:11434",
   model: "llama3.2",
+  fastModel: "llama3.2",
   apiKey: "",
   searchProvider: "duckduckgo",
   searchUrl: "",
@@ -44,17 +46,18 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
         setLoading(false);
         return;
       }
-      
+
       try {
         const response = await fetch(`http://127.0.0.1:${apiPort}/settings`);
         if (!response.ok) throw new Error("Failed to fetch settings");
-        
+
         const backendSettings = await response.json();
-        
+
         // Merge backend settings with defaults
         setSettings({
           apiBase: backendSettings.base_url || defaultSettings.apiBase,
           model: backendSettings.model || defaultSettings.model,
+          fastModel: backendSettings.fast_model || backendSettings.model || defaultSettings.fastModel,
           apiKey: backendSettings.api_key || defaultSettings.apiKey,
           searchProvider: (backendSettings.search_provider as Settings["searchProvider"]) || defaultSettings.searchProvider,
           searchUrl: backendSettings.search_url || defaultSettings.searchUrl,
@@ -87,7 +90,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
         // Map UI settings to backend format
         const backendSettings = {
           model: settings.model,
-          fast_model: settings.model,
+          fast_model: settings.fastModel,
           base_url: settings.apiBase,
           api_key: settings.apiKey,
           system_prompt: settings.systemPrompt,
@@ -102,7 +105,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
         });
 
         if (!response.ok) throw new Error("Failed to save settings");
-        
+
         // Also save to localStorage as backup
         localStorage.setItem("lightbot-settings", JSON.stringify(settings));
         setError(null);
@@ -268,6 +271,20 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                 className="w-full px-2 py-1.5 bg-surface border border-border-subtle
                          text-text-primary text-sm focus:outline-none focus:border-accent"
                 placeholder="llama3.2, gpt-4, etc."
+              />
+            </div>
+
+            <div>
+              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
+                Fast Model (for query rewriting)
+              </label>
+              <input
+                type="text"
+                value={settings.fastModel}
+                onChange={(e) => updateSetting("fastModel", e.target.value)}
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
+                         text-text-primary text-sm focus:outline-none focus:border-accent"
+                placeholder="llama3.2, gpt-3.5-turbo, etc."
               />
             </div>
 

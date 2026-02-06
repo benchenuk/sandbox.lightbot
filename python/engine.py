@@ -41,7 +41,27 @@ class ChatEngine:
         # Initialize LLMs
         self.llm = None
         self.fast_llm = None
+        self._log_settings()
         self._init_llms()
+    
+    def _log_settings(self):
+        """Log current configuration settings (masking API key)."""
+        logger.info("=== LightBot Engine Configuration ===")
+        logger.info(f"Primary Model:   {self.model}")
+        logger.info(f"Fast Model:      {self.fast_model}")
+        logger.info(f"API Base URL:    {self.base_url}")
+        logger.info(f"Search Provider: {self.search_provider}")
+        logger.info(f"Search URL:      {self.search_url or 'N/A'}")
+        
+        # Mask API key for security
+        if self.api_key:
+            masked_key = f"{self.api_key[:4]}...{self.api_key[-4:]}" if len(self.api_key) > 8 else "****"
+            logger.info(f"API Key:         {masked_key}")
+        else:
+            logger.info("API Key:         Not Set (using dummy-key)")
+        
+        logger.info(f"System Prompt:   {self.system_prompt[:50]}...")
+        logger.info("======================================")
     
     def _default_system_prompt(self) -> str:
         return (
@@ -220,5 +240,6 @@ class ChatEngine:
             self.search_tool.update_settings(base_url=settings["search_url"])
         
         self._init_llms()
+        self._log_settings()
 
 
