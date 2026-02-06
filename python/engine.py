@@ -39,6 +39,11 @@ LLM_SYSTEM_PROMPT=You are a helpful AI assistant with web search capabilities.
 # Search Configuration
 SEARCH_PROVIDER=duckduckgo
 SEARCH_URL=
+
+# UI Configuration
+# Hotkey format: Command+Shift+O, Ctrl+Alt+Space, etc.
+# Restart app to apply changes
+GLOBAL_HOTKEY=Command+Shift+O
 """
         USER_ENV_FILE.write_text(default_content)
         print(f"[LightBot] Created default config at {USER_ENV_FILE}")
@@ -277,6 +282,8 @@ class ChatEngine:
     
     def get_settings(self) -> dict:
         """Get current engine settings."""
+        # Reload to pick up any external changes
+        load_dotenv(ENV_FILE_PATH, override=True)
         return {
             "model": self.model,
             "fast_model": self.fast_model,
@@ -285,6 +292,7 @@ class ChatEngine:
             "system_prompt": self.system_prompt,
             "search_provider": self.search_provider,
             "search_url": self.search_url,
+            "hotkey": os.getenv("GLOBAL_HOTKEY", "Command+Shift+O"),
         }
     
     def update_settings(self, settings: dict):
@@ -318,6 +326,8 @@ class ChatEngine:
             self.search_url = settings["search_url"]
             set_key(ENV_FILE_PATH, "SEARCH_URL", self.search_url)
             self.search_tool.update_settings(base_url=settings["search_url"])
+        if "hotkey" in settings:
+            set_key(ENV_FILE_PATH, "GLOBAL_HOTKEY", settings["hotkey"])
         
         logger.info(f"Settings saved to {ENV_FILE_PATH}")
         

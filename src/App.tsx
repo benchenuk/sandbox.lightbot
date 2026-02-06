@@ -8,12 +8,20 @@ import { useSidecar } from "./hooks/useSidecar";
 function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
-  const [fontSize, setFontSize] = useState<"small" | "medium" | "large">("medium");
+  const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(() => {
+    // Load from localStorage on initial render
+    const saved = localStorage.getItem("lightbot-font-size");
+    if (saved === "small" || saved === "medium" || saved === "large") {
+      return saved;
+    }
+    return "medium";
+  });
   const { isReady, error, port: sidecarPort } = useSidecar();
 
-  // Apply font size class to document
+  // Apply font size class to document and save to localStorage
   useEffect(() => {
     document.documentElement.className = `font-size-${fontSize}`;
+    localStorage.setItem("lightbot-font-size", fontSize);
   }, [fontSize]);
 
   // Sync pin state with actual window state

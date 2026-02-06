@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { AlertCircle } from "lucide-react";
 
 // Build timestamp - changes with every build
 const BUILD_TIMESTAMP = "2026-02-05 15:10";
@@ -34,6 +35,7 @@ const emptySettings: Settings = {
 
 export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, apiPort }: SettingsPanelProps) {
   const [settings, setSettings] = useState<Settings>(emptySettings);
+  const [initialHotkey, setInitialHotkey] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"general" | "llm" | "search">("general");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +65,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
           hotkey: backendSettings.hotkey || "Command+Shift+O",
           systemPrompt: backendSettings.system_prompt || "",
         });
+        setInitialHotkey(backendSettings.hotkey || "Command+Shift+O");
         setError(null);
       } catch (err) {
         setError("Failed to load settings from backend");
@@ -90,6 +93,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
         system_prompt: settings.systemPrompt,
         search_provider: settings.searchProvider,
         search_url: settings.searchUrl,
+        hotkey: settings.hotkey,
       };
 
       const response = await fetch(`http://127.0.0.1:${apiPort}/settings`, {
@@ -199,7 +203,10 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                            text-text-primary text-sm focus:outline-none focus:border-accent"
                   placeholder="e.g., Command+Shift+O"
                 />
-                <p className="text-text-disabled text-xs mt-1">
+                <p className="text-text-disabled text-xs mt-1 flex items-center gap-1">
+                  {settings.hotkey !== initialHotkey && (
+                    <AlertCircle size={12} className="text-accent" />
+                  )}
                   Restart required to apply
                 </p>
               </div>

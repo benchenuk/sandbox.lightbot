@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::process::Child;
 use std::sync::Mutex;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
@@ -7,6 +8,28 @@ use tauri::{Emitter, Manager, Runtime};
 struct SidecarState {
     port: Mutex<u16>,
     error: Mutex<Option<String>>,
+}
+
+/// Load .env file from project root (dev) or user home (production)
+fn load_dotenv() {
+    // Try project root first (development)
+    let project_root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap_or(Path::new("."));
+    let dev_env = project_root.join(".env");
+    
+    if dev_env.exists() {
+        println!("Loading .env from project root: {:?}", dev_env);
+        let _ = dotenv::from_path(&dev_env);
+        return;
+    }
+    
+    // Fallback to user home (production)
+    if let Some(home) = dirs::home_dir() {
+        let user_env = home.join(".lightbot").join(".env");
+        if user_env.exists() {
+            println!("Loading .env from user home: {:?}", user_env);
+            let _ = dotenv::from_path(&user_env);
+        }
+    }
 }
 
 fn toggle_window_visibility<R: Runtime>(app: &tauri::AppHandle<R>) {
@@ -59,12 +82,29 @@ fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()>
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 fn setup_global_hotkey<R: Runtime>(app: &tauri::AppHandle<R>) -> Result<(), Box<dyn std::error::Error>> {
-    // Command+Shift+O as default hotkey
-    let shortcut: Shortcut = "Command+Shift+O".parse().expect("Invalid shortcut");
+    // Read hotkey from env, fallback to Command+Shift+O
+    let mut hotkey_str = std::env::var("GLOBAL_HOTKEY").unwrap_or_else(|_| "Command+Shift+O".to_string());
+    
+    // Clean up quotes if present (common when written by some env tools)
+    hotkey_str = hotkey_str.trim_matches(|c| c == '\'' || c == '"').to_string();
+    
+    // Normalize "Cmd" to "Command" for platform compatibility
+    let normalized_hotkey = hotkey_str.replace("Cmd", "Command");
+    
+    let shortcut: Shortcut = match normalized_hotkey.parse() {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Invalid hotkey '{}', error: {:?}. Using default.", normalized_hotkey, e);
+            "Command+Shift+O".parse::<Shortcut>()?
+        }
+    };
+
+    println!("Registering global hotkey: {}", normalized_hotkey);
 
     app.global_shortcut()
         .on_shortcut(shortcut, move |app, _shortcut, event| {
             if event.state() == ShortcutState::Pressed {
+                // println!("🔥 Global hotkey '{}' triggered", normalized_hotkey);
                 toggle_window_visibility(app);
             }
         })?;
@@ -198,6 +238,9 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![get_sidecar_status])
         .setup(|app| {
+            // Load .env file for configuration (before hotkey setup)
+            load_dotenv();
+
             // Setup system tray
             setup_system_tray(app.handle())?;
 
