@@ -21,20 +21,19 @@ interface Settings {
   systemPrompt: string;
 }
 
-const defaultSettings: Settings = {
-  apiBase: "http://localhost:11434",
-  model: "llama3.2",
-  fastModel: "llama3.2",
+const emptySettings: Settings = {
+  apiBase: "",
+  model: "",
+  fastModel: "",
   apiKey: "",
   searchProvider: "duckduckgo",
   searchUrl: "",
   hotkey: "Command+Shift+O",
-  systemPrompt:
-    "You are LightBot, a helpful AI assistant with web search capabilities.",
+  systemPrompt: "",
 };
 
 export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, apiPort }: SettingsPanelProps) {
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [settings, setSettings] = useState<Settings>(emptySettings);
   const [activeTab, setActiveTab] = useState<"general" | "llm" | "search">("general");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,29 +52,20 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
 
         const backendSettings = await response.json();
 
-        // Merge backend settings with defaults
+        // Use backend values (may be empty strings)
         setSettings({
-          apiBase: backendSettings.base_url || defaultSettings.apiBase,
-          model: backendSettings.model || defaultSettings.model,
-          fastModel: backendSettings.fast_model || backendSettings.model || defaultSettings.fastModel,
-          apiKey: backendSettings.api_key || defaultSettings.apiKey,
-          searchProvider: (backendSettings.search_provider as Settings["searchProvider"]) || defaultSettings.searchProvider,
-          searchUrl: backendSettings.search_url || defaultSettings.searchUrl,
-          hotkey: backendSettings.hotkey || defaultSettings.hotkey,
-          systemPrompt: backendSettings.system_prompt || defaultSettings.systemPrompt,
+          apiBase: backendSettings.base_url || "",
+          model: backendSettings.model || "",
+          fastModel: backendSettings.fast_model || backendSettings.model || "",
+          apiKey: backendSettings.api_key || "",
+          searchProvider: (backendSettings.search_provider as Settings["searchProvider"]) || "duckduckgo",
+          searchUrl: backendSettings.search_url || "",
+          hotkey: backendSettings.hotkey || "Command+Shift+O",
+          systemPrompt: backendSettings.system_prompt || "",
         });
         setError(null);
       } catch (err) {
         setError("Failed to load settings from backend");
-        // Fallback to localStorage
-        const saved = localStorage.getItem("lightbot-settings");
-        if (saved) {
-          try {
-            setSettings({ ...defaultSettings, ...JSON.parse(saved) });
-          } catch {
-            // Ignore parse error
-          }
-        }
       } finally {
         setLoading(false);
       }
@@ -85,39 +75,36 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
   }, [apiPort]);
 
   const handleSave = async () => {
-    if (apiPort) {
-      try {
-        // Map UI settings to backend format
-        const backendSettings = {
-          model: settings.model,
-          fast_model: settings.fastModel,
-          base_url: settings.apiBase,
-          api_key: settings.apiKey,
-          system_prompt: settings.systemPrompt,
-          search_provider: settings.searchProvider,
-          search_url: settings.searchUrl,
-        };
-
-        const response = await fetch(`http://127.0.0.1:${apiPort}/settings`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(backendSettings),
-        });
-
-        if (!response.ok) throw new Error("Failed to save settings");
-
-        // Also save to localStorage as backup
-        localStorage.setItem("lightbot-settings", JSON.stringify(settings));
-        setError(null);
-      } catch (err) {
-        setError("Failed to save settings to backend");
-        return;
-      }
-    } else {
-      // Fallback to localStorage only
-      localStorage.setItem("lightbot-settings", JSON.stringify(settings));
+    if (!apiPort) {
+      setError("Backend not connected");
+      return;
     }
-    onClose();
+
+    try {
+      // Map UI settings to backend format
+      const backendSettings = {
+        model: settings.model,
+        fast_model: settings.fastModel,
+        base_url: settings.apiBase,
+        api_key: settings.apiKey,
+        system_prompt: settings.systemPrompt,
+        search_provider: settings.searchProvider,
+        search_url: settings.searchUrl,
+      };
+
+      const response = await fetch(`http://127.0.0.1:${apiPort}/settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(backendSettings),
+      });
+
+      if (!response.ok) throw new Error("Failed to save settings");
+
+      setError(null);
+      onClose();
+    } catch (err) {
+      setError("Failed to save settings to backend");
+    }
   };
 
   const updateSetting = <K extends keyof Settings>(

@@ -1,14 +1,53 @@
 import logging
 import os
 from collections import defaultdict
+from pathlib import Path
 from typing import AsyncGenerator, List
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
+from dotenv import load_dotenv, set_key
 
 # Configure logging
 logger = logging.getLogger("lightbot.engine")
+
+# Config paths
+PROJECT_ROOT = Path(__file__).parent.parent  # python/ -> project root
+DEV_ENV_FILE = PROJECT_ROOT / ".env"
+
+USER_CONFIG_DIR = Path.home() / ".lightbot"
+USER_ENV_FILE = USER_CONFIG_DIR / ".env"
+
+# Determine which env file to use
+# If project root .env exists (development), use it exclusively
+# Otherwise use user home .env (production/bundled app)
+if DEV_ENV_FILE.exists():
+    ENV_FILE_PATH = DEV_ENV_FILE
+    print(f"[LightBot] Development mode: using {ENV_FILE_PATH}")
+else:
+    # Ensure user config directory exists
+    USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # Create default .env if it doesn't exist
+    if not USER_ENV_FILE.exists():
+        default_content = """# LightBot Configuration
+# Restart app after editing this file
+
+# LLM Configuration
+LLM_BASE_URL=
+LLM_MODEL=
+LLM_API_KEY=
+LLM_SYSTEM_PROMPT=You are a helpful AI assistant with web search capabilities.
+
+# Search Configuration
+SEARCH_PROVIDER=duckduckgo
+SEARCH_URL=
+"""
+        USER_ENV_FILE.write_text(default_content)
+        print(f"[LightBot] Created default config at {USER_ENV_FILE}")
+    
+    ENV_FILE_PATH = USER_ENV_FILE
+    print(f"[LightBot] Production mode: using {ENV_FILE_PATH}")
+
+# Load the determined env file
+load_dotenv(ENV_FILE_PATH, override=True)
 
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai_like import OpenAILike
@@ -21,11 +60,14 @@ class ChatEngine:
     """Main chat engine with ephemeral memory."""
     
     def __init__(self):
-        # Load settings from env or defaults
-        self.model: str = os.getenv("LLM_MODEL", "gpt-4o")
-        self.fast_model: str = os.getenv("LLM_FAST_MODEL", self.model)
-        self.base_url: str | None = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
-        self.api_key: str | None = os.getenv("LLM_API_KEY", None)
+        # Reload env file to pick up any external changes
+        load_dotenv(ENV_FILE_PATH, override=True)
+        
+        # Load settings from env (empty strings if not set)
+        self.model: str = os.getenv("LLM_MODEL", "")
+        self.fast_model: str = os.getenv("LLM_FAST_MODEL", "")
+        self.base_url: str = os.getenv("LLM_BASE_URL", "")
+        self.api_key: str = os.getenv("LLM_API_KEY", "")
         self.system_prompt: str = os.getenv("LLM_SYSTEM_PROMPT", self._default_system_prompt())
         
         # Search settings
@@ -65,34 +107,51 @@ class ChatEngine:
     
     def _default_system_prompt(self) -> str:
         return (
-            "You are LightBot, a helpful AI assistant with web search capabilities. "
+            "You are a helpful AI assistant with web search capabilities. "
             "You provide concise, accurate answers. "
             "When you need current information, you can search the web."
         )
     
     def _init_llms(self):
         """Initialize both primary and fast LLMs using OpenAI-compatible interface."""
+        # Skip initialization if critical settings are missing
+        if not self.base_url or not self.model:
+            logger.warning("LLM not initialized: base_url or model not configured")
+            self.llm = None
+            self.fast_llm = None
+            return
+        
         api_key = self.api_key or "dummy-key"
-        self.llm = OpenAILike(
-            model=self.model, 
-            api_key=api_key, 
-            api_base=self.base_url,
-            is_chat_model=True,
-            timeout=60.0
-        )
-        self.fast_llm = OpenAILike(
-            model=self.fast_model, 
-            api_key=api_key, 
-            api_base=self.base_url,
-            is_chat_model=True,
-            timeout=30.0
-        )
+        try:
+            self.llm = OpenAILike(
+                model=self.model, 
+                api_key=api_key, 
+                api_base=self.base_url,
+                is_chat_model=True,
+                timeout=60.0
+            )
+            self.fast_llm = OpenAILike(
+                model=self.fast_model or self.model, 
+                api_key=api_key, 
+                api_base=self.base_url,
+                is_chat_model=True,
+                timeout=30.0
+            )
+            logger.info("LLM initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize LLM: {e}")
+            self.llm = None
+            self.fast_llm = None
 
     
     async def _rewrite_query(self, message: str, history: List[ChatMessage]) -> str:
         """Rewrite the user query using conversation history for better search results."""
         logger.info(f"[EVENT] Query rewrite check - history_size={len(history)}")
         if not history:
+            return message
+        
+        if not self.fast_llm:
+            logger.warning("Query rewrite skipped: fast_llm not configured")
             return message
         
         logger.info(f"[EVENT] Query rewrite started using model: {self.fast_model}")
@@ -134,6 +193,9 @@ class ChatEngine:
 
     async def chat(self, message: str, session_id: str | None = None, search_mode: str = "off") -> str:
         """Send a message and get a response."""
+        if not self.llm:
+            return "Error: LLM not configured. Please set Base URL and Model in Settings."
+        
         sid = session_id or "default"
         history = self._memory[sid]
         
@@ -167,6 +229,10 @@ class ChatEngine:
         self, message: str, session_id: str | None = None, search_mode: str = "off"
     ) -> AsyncGenerator[str, None]:
         """Send a message and get a streaming response."""
+        if not self.llm:
+            yield "Error: LLM not configured. Please set Base URL and Model in Settings."
+            return
+        
         sid = session_id or "default"
         history = self._memory[sid]
         
@@ -215,31 +281,48 @@ class ChatEngine:
             "model": self.model,
             "fast_model": self.fast_model,
             "base_url": self.base_url,
+            "api_key": self.api_key,
             "system_prompt": self.system_prompt,
             "search_provider": self.search_provider,
             "search_url": self.search_url,
         }
     
     def update_settings(self, settings: dict):
-        """Update engine settings and reinitialize LLMs if needed."""
+        """Update engine settings, save to .env file, and reinitialize LLMs if needed."""
+        reinitialize = False
+        
         if "model" in settings:
             self.model = settings["model"]
+            set_key(ENV_FILE_PATH, "LLM_MODEL", self.model)
+            reinitialize = True
         if "fast_model" in settings:
             self.fast_model = settings["fast_model"]
+            set_key(ENV_FILE_PATH, "LLM_FAST_MODEL", self.fast_model)
+            reinitialize = True
         if "base_url" in settings:
             self.base_url = settings["base_url"]
+            set_key(ENV_FILE_PATH, "LLM_BASE_URL", self.base_url)
+            reinitialize = True
         if "api_key" in settings:
             self.api_key = settings["api_key"]
+            set_key(ENV_FILE_PATH, "LLM_API_KEY", self.api_key)
+            reinitialize = True
         if "system_prompt" in settings:
             self.system_prompt = settings["system_prompt"]
+            set_key(ENV_FILE_PATH, "LLM_SYSTEM_PROMPT", self.system_prompt)
         if "search_provider" in settings:
             self.search_provider = settings["search_provider"]
+            set_key(ENV_FILE_PATH, "SEARCH_PROVIDER", self.search_provider)
             self.search_tool.update_settings(provider=settings["search_provider"])
         if "search_url" in settings:
             self.search_url = settings["search_url"]
+            set_key(ENV_FILE_PATH, "SEARCH_URL", self.search_url)
             self.search_tool.update_settings(base_url=settings["search_url"])
         
-        self._init_llms()
+        logger.info(f"Settings saved to {ENV_FILE_PATH}")
+        
+        if reinitialize:
+            self._init_llms()
         self._log_settings()
 
 

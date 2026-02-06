@@ -14,7 +14,7 @@ CONDENSE_QUESTION_PROMPT = (
 
 # System prompt for answering with search context
 SEARCH_ANSWER_PROMPT = (
-    "You are LightBot, a helpful AI assistant with web search capabilities.\n"
+    "You are a helpful AI assistant with web search capabilities.\n"
     "Use the provided search results to answer the user's question accurately.\n"
     "If the search results don't contain the answer, say so, but still try to be helpful based on your knowledge.\n\n"
     "Search Results:\n"
