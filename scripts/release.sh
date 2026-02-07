@@ -60,35 +60,7 @@ fi
 
 # Step 1: Bump versions in config files
 echo -e "${BLUE}[1/6] Bumping version to $VERSION...${NC}"
-
-# Update package.json
-jq --arg v "$VERSION" '.version = $v' package.json > package.json.tmp && mv package.json.tmp package.json
-echo "  ✓ package.json"
-
-# Update package-lock.json (via npm install)
-npm install --package-lock-only 2>/dev/null || npm install
-echo "  ✓ package-lock.json"
-
-# Update tauri.conf.json
-jq --arg v "$VERSION" '.version = $v' src-tauri/tauri.conf.json > src-tauri/tauri.conf.json.tmp && mv src-tauri/tauri.conf.json.tmp src-tauri/tauri.conf.json
-echo "  ✓ src-tauri/tauri.conf.json"
-
-# Update Cargo.toml
-sed -i '' "s/^version = \"[0-9]*\.[0-9]*\.[0-9]*\"/version = \"$VERSION\"/" src-tauri/Cargo.toml
-echo "  ✓ src-tauri/Cargo.toml"
-
-# Update pyproject.toml
-sed -i '' "s/^version = \"[0-9]*\.[0-9]*\.[0-9]*\"/version = \"$VERSION\"/" pyproject.toml
-echo "  ✓ pyproject.toml"
-
-# Update python/server.py - HealthResponse version
-sed -i '' "s/version: str = \"[0-9]*\.[0-9]*\.[0-9]*\"/version: str = \"$VERSION\"/" python/server.py
-echo "  ✓ python/server.py (HealthResponse)"
-
-# Update python/server.py - FastAPI version
-sed -i '' "s/^    version=\"[0-9]*\.[0-9]*\.[0-9]*\"/    version=\"$VERSION\"/" python/server.py
-echo "  ✓ python/server.py (FastAPI)"
-
+./scripts/bump-version.sh "$VERSION"
 echo ""
 
 # Step 2: Build Python sidecar

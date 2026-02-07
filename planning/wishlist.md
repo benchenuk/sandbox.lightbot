@@ -14,3 +14,5 @@
 - [ ] Optional voice reply
 - [ ] Optional double 
 - [x] Better Logo
+- [ ] User input history. Navigate by arrow up and down key. 
+

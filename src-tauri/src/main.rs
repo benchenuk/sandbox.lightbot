@@ -1,41 +1,6 @@
 use std::path::Path;
 use std::process::Child;
 use std::sync::Mutex;
-
-/// Initialize flexi_logger with rotation
-fn setup_logger() -> Result<(), Box<dyn std::error::Error>> {
-    use flexi_logger::{Cleanup, Criterion, FileSpec, Naming, Logger};
-
-    // Get log directory from env or default to ~/.lightbot/logs
-    let log_dir = std::env::var("LOG_DIR")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| {
-            dirs::home_dir()
-                .map(|h| h.join(".lightbot").join("logs"))
-                .unwrap_or_else(|| std::path::PathBuf::from("logs"))
-        });
-
-    // Get log level from env or default to info
-    let log_level = std::env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
-
-    Logger::try_with_str(&log_level)?
-        .log_to_file(FileSpec::default().directory(log_dir))
-        .rotate(
-            Criterion::Size(5 * 1024 * 1024), // 5MB per file
-            Naming::Numbers,                  // Use numbers (lightbot.log, lightbot.log.1, etc.)
-            Cleanup::KeepLogFiles(3),         // Keep 3 files max
-        )
-        .write_mode(flexi_logger::WriteMode::Async)
-        .start()?;
-
-    log::info!("Logger initialized with level: {}", log_level);
-    Ok(())
-}
-
-/// Log a message (shim for flexi_logger)
-fn log_to_file(msg: &str) {
-    log::info!("{}", msg);
-}
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, Runtime};
@@ -209,23 +174,38 @@ async fn spawn_python_sidecar<R: Runtime>(
     possible_paths.push(Some(std::path::PathBuf::from(format!("bin/{}", sidecar_with_triple))));
     possible_paths.push(Some(std::path::PathBuf::from("bin/python-sidecar")));
 
+    // Log debugging info
+    
+    // Additional debugging - check if we're in /Applications
+    if let Ok(exe) = std::env::current_exe() {
+        let exe_str = exe.display().to_string();
+        if exe_str.contains("/Applications/") {
+        } else if exe_str.contains("target/") {
+        } else {
+        }
+    }
+    
     let mut sidecar_path = None;
-    for path in possible_paths.into_iter().flatten() {
+    for path in possible_paths.iter().flatten() {
         if path.exists() {
-            sidecar_path = Some(path);
+            sidecar_path = Some(path.clone());
             break;
         }
     }
 
     let sidecar_path = sidecar_path.ok_or_else(|| {
-        let err = format!("Python sidecar binary not found. Please run ./scripts/build-sidecar.sh. Expected: src-tauri/bin/{}", sidecar_with_triple);
-        log_to_file(&err);
+        let checked_paths: Vec<String> = possible_paths.iter().flatten()
+            .map(|p| p.display().to_string())
+            .collect();
+        let err = format!(
+            "Python sidecar binary not found. Checked paths: {:?}", 
+            checked_paths
+        );
         err
     })?;
 
     let msg = format!("Spawning Python sidecar from: {:?}", sidecar_path);
-    println!("{}", msg);
-    log_to_file(&msg);
+    eprintln!("{}", msg);
 
     // Spawn the Python sidecar process
     let mut command = std::process::Command::new(sidecar_path);
@@ -236,42 +216,19 @@ async fn spawn_python_sidecar<R: Runtime>(
         command.env("PYTHONUNBUFFERED", "1");
     }
 
-    // Redirect sidecar stdout/stderr to the rotating log file
-    // With Naming::Numbers, the current file is always lightbot.log
-    let log_dir = std::env::var("LOG_DIR")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| {
-            dirs::home_dir()
-                .map(|h| h.join(".lightbot").join("logs"))
-                .unwrap_or_else(|| std::path::PathBuf::from("logs"))
-        });
-    let _ = std::fs::create_dir_all(&log_dir);
-    let log_file_path = log_dir.join("lightbot.log");
-    
-    use std::fs::OpenOptions;
-    if let Ok(log_file) = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&log_file_path) 
-    {
-        command.stdout(log_file.try_clone().expect("Failed to clone log handle"));
-        command.stderr(log_file);
-        log::info!("Sidecar output redirected to rotating log: {:?}", log_file_path);
-    }
+    // Sidecar output redirection disabled - matches v1.0.0 behavior
 
     let child = match command.spawn() {
         Ok(c) => {
-            log_to_file(&format!("Sidecar spawned with PID: {:?}", c.id()));
             c
         }
         Err(e) => {
             let err = format!("Failed to spawn sidecar: {}", e);
-            log_to_file(&err);
             return Err(err);
         }
     };
 
-    // Wait a bit for the server to start
+    // Wait a bit for the server to start (same as v1.0.0)
     tokio::time::sleep(tokio::time::Duration::from_millis(1500)).await;
 
     // Verify the server is running
@@ -284,27 +241,30 @@ async fn spawn_python_sidecar<R: Runtime>(
             Ok(resp) if resp.status().is_success() => {
                 let msg = format!("Python sidecar is healthy on port {}", port);
                 println!("{}", msg);
-                log_to_file(&msg);
                 return Ok((Some(child), port));
             }
             Ok(resp) => {
-                let err = format!("Health check returned status: {}", resp.status());
-                log_to_file(&err);
+                let status = resp.status();
+                let body = resp.text().await.unwrap_or_default();
+                let _err = format!("Health check returned status: {}, body: {}", status, body);
                 retries -= 1;
                 if retries == 0 {
                     let final_err = "Sidecar health check failed - /health not returning success".to_string();
-                    log_to_file(&final_err);
                     return Err(final_err);
                 }
                 tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
             }
             Err(e) => {
-                let err = format!("Health check request failed: {}", e);
-                log_to_file(&err);
+                let _err = format!("Health check request failed ({} retries left): {}", retries, e);
+                
+                // Check if it's a connection refused error
+                let err_str = format!("{}", e);
+                if err_str.contains("refused") || err_str.contains("Connection") {
+                }
+                
                 retries -= 1;
                 if retries == 0 {
                     let final_err = "Sidecar health check failed - server not responding".to_string();
-                    log_to_file(&final_err);
                     return Err(final_err);
                 }
                 tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
@@ -328,11 +288,6 @@ fn get_sidecar_status(state: tauri::State<SidecarState>) -> Result<u16, String> 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Initialize logger first (before anything else)
-    if let Err(e) = setup_logger() {
-        eprintln!("Failed to initialize logger: {}", e);
-    }
-    log::info!("=== LightBot App Starting ===");
     
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -364,18 +319,19 @@ pub fn run() {
                         *state.port.lock().unwrap() = port;
                         
                         // Emit event to frontend that sidecar is ready
-                        let _ = app_handle.emit("sidecar-ready", port);
+                        if let Err(_e) = app_handle.emit("sidecar-ready", port) {
+                        }
                     }
                     Err(e) => {
                         let err_msg = format!("Failed to start Python sidecar: {}", e);
                         eprintln!("{}", err_msg);
-                        log_to_file(&err_msg);
                         
                         // Store the error in state
                         let state = app_handle.state::<SidecarState>();
                         *state.error.lock().unwrap() = Some(e.clone());
                         
-                        let _ = app_handle.emit("sidecar-error", e);
+                        if let Err(_err) = app_handle.emit("sidecar-error", e) {
+                        }
                     }
                 }
             });

@@ -13,4 +13,4 @@
 12. [x] white icon on menu bar
 13. [x] "Backend not connected". Add logging. 
 14. [x] Clicking on tray icon show the drop down menu only. Clicking on "Show" to bring the window to the front. 
-
+15. [ ] Support "shift+enter" to new line.

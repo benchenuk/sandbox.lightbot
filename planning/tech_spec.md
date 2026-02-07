@@ -250,6 +250,26 @@ This format provides:
 - **Date**: When the build was created
 - **Git Hash**: Exact code revision for traceability
 
+### Version Bumping
+
+For development environment setup or preparing for a release:
+
+```bash
+# Bump version across all config files
+./scripts/bump-version.sh [version]
+
+# Example: Set version to 0.2.0
+./scripts/bump-version.sh 0.2.0
+```
+
+**Files updated:**
+- `package.json`
+- `package-lock.json`
+- `src-tauri/tauri.conf.json`
+- `src-tauri/Cargo.toml`
+- `pyproject.toml`
+- `python/server.py` (HealthResponse & FastAPI versions)
+
 ### Release Script
 
 ```bash
@@ -261,14 +281,13 @@ This format provides:
 ```
 
 **What the script does:**
-1. Validates version format (X.Y.Z)
+1. Calls `bump-version.sh` to update all version numbers
 2. Warns if uncommitted changes exist
-3. Bumps version in:
-   - `package.json`
-   - `src-tauri/tauri.conf.json`
-4. Builds Python sidecar (PyInstaller)
+3. Builds Python sidecar (PyInstaller)
+4. Sets `VITE_BUILD_ID` env var
 5. Builds Tauri application
-6. Outputs signed/unsigned DMG
+6. Updates `Cargo.lock`
+7. Outputs signed/unsigned DMG
 
 ### Files Updated During Release
 
@@ -330,37 +349,30 @@ define: {
 // Example output: BUILD: 0.2.0+20250206.a1b2c3d
 ```
 
-### Logging
+### Logging (Simplified)
 
-Uses `flexi_logger` with rotation to prevent log bloat.
+**Status**: File logging solution was attempted and abandoned due to complexity and process handling issues.
 
-**Log Configuration (.env)**:
-```bash
-LOG_LEVEL=info        # error, warn, info, debug, trace
-LOG_DIR=~/.lightbot/logs   # Optional, defaults to ~/.lightbot/logs
-```
+**Current Approach**:
+- **Development**: Output goes to terminal/stdout
+- **Production**: Output captured by macOS Console.app automatically
 
-**Log Files**:
-```
-~/.lightbot/logs/
-├── lightbot.log      # Current log (Rust + Python sidecar combined)
-├── lightbot.log.1    # Rotated (older, 5MB)
-└── lightbot.log.2    # Rotated (oldest, 5MB)
-```
-
-**Rotation**: 5MB per file, keep 3 files max (15MB total). Both Rust app and Python sidecar output go to the same rotating log file.
+**Rationale**:
+1. **File redirection broke sidecar spawning** - Attempting to redirect sidecar stdout/stderr to a log file handle caused process spawning issues (`try_clone()` failures, handle ownership problems)
+2. **Added complexity** - External crates (`flexi_logger`, `chrono`) and rotation logic were overkill
+3. **Console.app is sufficient** - macOS already captures app output for debugging
 
 **Viewing Logs**:
 ```bash
-# View current app log
-tail -f ~/.lightbot/logs/lightbot_*.log
+# Development - terminal output
+npm run tauri-dev
 
-# View sidecar log
-tail -f ~/.lightbot/logs/sidecar.log
-
-# View all logs
-ls -lah ~/.lightbot/logs/
+# Production - view in Console.app
+# Applications → Utilities → Console
+# Filter by "LightBot" process
 ```
+
+**Historical Note**: Earlier versions attempted file-based logging with rotation (5MB x 3 files) but this was abandoned in v1.1.6. The issue was root-caused to `child.try_wait()` interfering with process spawning, not the logging itself, but the simplification was kept.
 
 ---
 

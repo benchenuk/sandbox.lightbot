@@ -1,6 +1,6 @@
 [package]
 name = "lightbot"
-version = "1.1.0"
+version = "1.1.6"
 description = "Lightweight AI Chat Bot with Web Search"
 authors = ["LightBot Team"]
 license = "MIT"
@@ -21,12 +21,9 @@ serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", features = ["json"] }
 portpicker = "0.1"
-log = "0.4"
 dotenv = "0.15"
 dirs = "5.0"
-chrono = "0.4"
 image = { version = "0.25", default-features = false, features = ["png"] }
-flexi_logger = { version = "0.31", features = ["async", "compress"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"
