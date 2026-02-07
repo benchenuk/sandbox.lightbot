@@ -233,9 +233,103 @@ The Sidecar can be configured via `.env` to support Dual Models without UI chang
 - [x] PyInstaller Build Script
 - [x] Multi-path discovery in Rust
 - [x] Manual Dev Mode support
-- [ ] macOS App Bundling
+- [x] macOS App Bundling
+- [x] Version bumping automation
 - [ ] Code Signing & Notarization
 
 ---
 
-*Last Updated: 2026-02-05*
+## Release Process
+
+### Build ID Format
+**Format**: `{version}+YYYYMMDD.{git_short_hash}`  
+**Example**: `0.2.0+20250206.a1b2c3d`
+
+This format provides:
+- **Version**: Semantic version for compatibility
+- **Date**: When the build was created
+- **Git Hash**: Exact code revision for traceability
+
+### Release Script
+
+```bash
+# Create a new release
+./scripts/release.sh [version]
+
+# Example: Release version 0.2.0
+./scripts/release.sh 0.2.0
+```
+
+**What the script does:**
+1. Validates version format (X.Y.Z)
+2. Warns if uncommitted changes exist
+3. Bumps version in:
+   - `package.json`
+   - `src-tauri/tauri.conf.json`
+4. Builds Python sidecar (PyInstaller)
+5. Builds Tauri application
+6. Outputs signed/unsigned DMG
+
+### Files Updated During Release
+
+| File | Content Updated | Notes |
+|------|----------------|-------|
+| `package.json` | `"version": "X.Y.Z"` | NPM package version |
+| `package-lock.json` | Version synced | Auto-updated via `npm install` |
+| `src-tauri/tauri.conf.json` | `"version": "X.Y.Z"` | Tauri app version |
+| `src-tauri/Cargo.toml` | `version = "X.Y.Z"` | Rust package version |
+| `src-tauri/Cargo.lock` | Version synced | Auto-updated via `cargo update` |
+| `pyproject.toml` | `version = "X.Y.Z"` | Python package version |
+| `python/server.py` | `version="X.Y.Z"` | HealthResponse & FastAPI version |
+
+### Build Output
+
+```
+src-tauri/target/release/bundle/
+├── macos/
+│   └── LightBot.app              # Unsigned app bundle
+└── dmg/
+    └── LightBot_0.2.0.dmg        # Unsigned DMG installer
+```
+
+### Code Signing & Notarization (Placeholder)
+
+For local development/testing, unsigned builds work fine. For distribution:
+
+```bash
+# 1. Code sign the app bundle
+codesign --force --options runtime \
+  --sign "Developer ID Application: Your Name" \
+  "src-tauri/target/release/bundle/macos/LightBot.app"
+
+# 2. Create signed DMG (using create-dmg or similar)
+
+# 3. Notarize the DMG
+xcrun notarytool submit "LightBot_0.2.0.dmg" \
+  --keychain-profile "AC_PASSWORD" \
+  --wait
+
+# 4. Staple notarization ticket
+xcrun stapler staple "LightBot_0.2.0.dmg"
+```
+
+### Displaying Build Info
+
+The build ID is displayed in Settings → General tab:
+
+```typescript
+// vite.config.ts - Build ID is injected at build time
+define: {
+  __APP_BUILD_ID__: JSON.stringify(process.env.VITE_BUILD_ID || "dev"),
+}
+```
+
+```typescript
+// SettingsPanel.tsx - Display in UI
+<span>BUILD: {__APP_BUILD_ID__}</span>
+// Example output: BUILD: 0.2.0+20250206.a1b2c3d
+```
+
+---
+
+*Last Updated: 2026-02-06*

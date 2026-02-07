@@ -1,6 +1,25 @@
+use std::io::Write;
 use std::path::Path;
 use std::process::Child;
 use std::sync::Mutex;
+
+/// Get path to log file
+fn get_log_path() -> Option<std::path::PathBuf> {
+    dirs::home_dir().map(|h| h.join(".lightbot").join("app.log"))
+}
+
+/// Simple file logger for debugging packaged app issues
+fn log_to_file(msg: &str) {
+    if let Some(log_file) = get_log_path() {
+        let _ = std::fs::create_dir_all(log_file.parent().unwrap());
+        let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+        let _ = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log_file)
+            .and_then(|mut f| writeln!(f, "[{}] {}", timestamp, msg));
+    }
+}
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, Runtime};
@@ -154,9 +173,17 @@ async fn spawn_python_sidecar<R: Runtime>(
     let triple = format!("{}-apple-darwin", arch);
     let sidecar_with_triple = format!("python-sidecar-{}", triple);
 
+    // Get the directory of the current executable (for bundled app)
+    let current_exe = std::env::current_exe().ok();
+    let exe_dir = current_exe.as_ref().and_then(|p| p.parent().map(|p| p.to_path_buf()));
+    
     // Try multiple possible paths for the sidecar binary
     let mut possible_paths = vec![
-        // Bundled paths (with and without triple)
+        // Bundled app: sidecar is in same directory as main executable (Contents/MacOS/)
+        exe_dir.as_ref().map(|d| d.join(sidecar_with_triple.clone())),
+        exe_dir.as_ref().map(|d| d.join("python-sidecar")),
+        
+        // Bundled paths via Resource (for older Tauri versions)
         app.path().resolve(format!("bin/{}", sidecar_with_triple), tauri::path::BaseDirectory::Resource).ok(),
         app.path().resolve("bin/python-sidecar", tauri::path::BaseDirectory::Resource).ok(),
         
@@ -180,12 +207,16 @@ async fn spawn_python_sidecar<R: Runtime>(
     }
 
     let sidecar_path = sidecar_path.ok_or_else(|| {
-        format!("Python sidecar binary not found. Please run ./scripts/build-sidecar.sh. Expected: src-tauri/bin/{}", sidecar_with_triple)
+        let err = format!("Python sidecar binary not found. Please run ./scripts/build-sidecar.sh. Expected: src-tauri/bin/{}", sidecar_with_triple);
+        log_to_file(&err);
+        err
     })?;
 
-    println!("Spawning Python sidecar from: {:?}", sidecar_path);
+    let msg = format!("Spawning Python sidecar from: {:?}", sidecar_path);
+    println!("{}", msg);
+    log_to_file(&msg);
 
-    // Spawn the Python sidecar process
+    // Spawn the Python sidecar process with output redirected to log
     let mut command = std::process::Command::new(sidecar_path);
     command.arg("--port").arg(port.to_string());
 
@@ -194,9 +225,32 @@ async fn spawn_python_sidecar<R: Runtime>(
         command.env("PYTHONUNBUFFERED", "1");
     }
 
-    let child = command
-        .spawn()
-        .map_err(|e| format!("Failed to spawn sidecar: {}", e))?;
+    // Redirect stdout/stderr to log file for debugging
+    if let Some(log_path) = get_log_path() {
+        use std::fs::OpenOptions;
+        let log_file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+            .ok();
+        if let Some(log) = log_file {
+            command.stdout(log.try_clone().expect("Failed to clone log file handle"));
+            command.stderr(log);
+            log_to_file("Sidecar stdout/stderr redirected to log file");
+        }
+    }
+
+    let child = match command.spawn() {
+        Ok(c) => {
+            log_to_file(&format!("Sidecar spawned with PID: {:?}", c.id()));
+            c
+        }
+        Err(e) => {
+            let err = format!("Failed to spawn sidecar: {}", e);
+            log_to_file(&err);
+            return Err(err);
+        }
+    };
 
     // Wait a bit for the server to start
     tokio::time::sleep(tokio::time::Duration::from_millis(1500)).await;
@@ -209,13 +263,30 @@ async fn spawn_python_sidecar<R: Runtime>(
     while retries > 0 {
         match client.get(&health_url).timeout(std::time::Duration::from_secs(2)).send().await {
             Ok(resp) if resp.status().is_success() => {
-                println!("Python sidecar is healthy on port {}", port);
+                let msg = format!("Python sidecar is healthy on port {}", port);
+                println!("{}", msg);
+                log_to_file(&msg);
                 return Ok((Some(child), port));
             }
-            _ => {
+            Ok(resp) => {
+                let err = format!("Health check returned status: {}", resp.status());
+                log_to_file(&err);
                 retries -= 1;
                 if retries == 0 {
-                    return Err("Sidecar health check failed - server started but /health not responding".to_string());
+                    let final_err = "Sidecar health check failed - /health not returning success".to_string();
+                    log_to_file(&final_err);
+                    return Err(final_err);
+                }
+                tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+            }
+            Err(e) => {
+                let err = format!("Health check request failed: {}", e);
+                log_to_file(&err);
+                retries -= 1;
+                if retries == 0 {
+                    let final_err = "Sidecar health check failed - server not responding".to_string();
+                    log_to_file(&final_err);
+                    return Err(final_err);
                 }
                 tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
             }
@@ -238,6 +309,8 @@ fn get_sidecar_status(state: tauri::State<SidecarState>) -> Result<u16, String> 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    log_to_file("=== LightBot App Starting ===");
+    
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
@@ -271,7 +344,9 @@ pub fn run() {
                         let _ = app_handle.emit("sidecar-ready", port);
                     }
                     Err(e) => {
-                        eprintln!("Failed to start Python sidecar: {}", e);
+                        let err_msg = format!("Failed to start Python sidecar: {}", e);
+                        eprintln!("{}", err_msg);
+                        log_to_file(&err_msg);
                         
                         // Store the error in state
                         let state = app_handle.state::<SidecarState>();

@@ -25,9 +25,12 @@
     - [x] Integrate Search Tool (DuckDuckGo, SearXNG)
     - [x] UI toggle for web search options
     - [x] Connect Search to Chat Logic (Query Rewrite Pipeline)
-- [ ] Packaging and Distribution
+- [x] Packaging and Distribution
     - [x] PyInstaller sidecar bundling
     - [x] Manual Dev Mode port support
-    - [ ] Configure bundling for MacOS app
-    - [ ] Verify standalone executable
+    - [x] Configure bundling for MacOS app
+    - [x] Version bumping automation
+    - [x] Build ID display in General tab
+    - [x] Release script (`scripts/release.sh`)
+    - [ ] Code signing & notarization (placeholder)
 

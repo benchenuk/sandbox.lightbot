@@ -1,17 +1,18 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-// Generate build ID (simple timestamp for now)
-const getBuildId = () => {
+
+// Build ID format: version+YYYYMMDD.git_hash (e.g., 0.1.0+20250206.a1b2c3d)
+// Set via VITE_BUILD_ID env var during release builds
+// Fallback to dev+timestamp for development mode
+const getDevBuildId = () => {
   const now = new Date();
-  return now.getFullYear().toString() +
-    (now.getMonth() + 1).toString().padStart(2, "0") +
-    now.getDate().toString().padStart(2, "0") +
-    now.getHours().toString().padStart(2, "0") +
-    now.getMinutes().toString().padStart(2, "0");
+  const date = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+  const time = now.toTimeString().slice(0, 8).replace(/:/g, ''); // HHMMSS
+  return `dev+${date}.${time}`;
 };
 
-const buildId = getBuildId();
+const buildId = process.env.VITE_BUILD_ID || getDevBuildId();
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({

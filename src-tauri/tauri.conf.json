@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "LightBot",
-  "version": "0.1.0",
-  "identifier": "com.lightbot.app",
+  "version": "1.0.0",
+  "identifier": "com.lightbot.tauri",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
