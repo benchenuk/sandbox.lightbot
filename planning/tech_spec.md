@@ -330,6 +330,38 @@ define: {
 // Example output: BUILD: 0.2.0+20250206.a1b2c3d
 ```
 
+### Logging
+
+Uses `flexi_logger` with rotation to prevent log bloat.
+
+**Log Configuration (.env)**:
+```bash
+LOG_LEVEL=info        # error, warn, info, debug, trace
+LOG_DIR=~/.lightbot/logs   # Optional, defaults to ~/.lightbot/logs
+```
+
+**Log Files**:
+```
+~/.lightbot/logs/
+├── lightbot.log      # Current log (Rust + Python sidecar combined)
+├── lightbot.log.1    # Rotated (older, 5MB)
+└── lightbot.log.2    # Rotated (oldest, 5MB)
+```
+
+**Rotation**: 5MB per file, keep 3 files max (15MB total). Both Rust app and Python sidecar output go to the same rotating log file.
+
+**Viewing Logs**:
+```bash
+# View current app log
+tail -f ~/.lightbot/logs/lightbot_*.log
+
+# View sidecar log
+tail -f ~/.lightbot/logs/sidecar.log
+
+# View all logs
+ls -lah ~/.lightbot/logs/
+```
+
 ---
 
 *Last Updated: 2026-02-06*

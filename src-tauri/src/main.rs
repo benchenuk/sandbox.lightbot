@@ -1,24 +1,40 @@
-use std::io::Write;
 use std::path::Path;
 use std::process::Child;
 use std::sync::Mutex;
 
-/// Get path to log file
-fn get_log_path() -> Option<std::path::PathBuf> {
-    dirs::home_dir().map(|h| h.join(".lightbot").join("app.log"))
+/// Initialize flexi_logger with rotation
+fn setup_logger() -> Result<(), Box<dyn std::error::Error>> {
+    use flexi_logger::{Cleanup, Criterion, FileSpec, Naming, Logger};
+
+    // Get log directory from env or default to ~/.lightbot/logs
+    let log_dir = std::env::var("LOG_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            dirs::home_dir()
+                .map(|h| h.join(".lightbot").join("logs"))
+                .unwrap_or_else(|| std::path::PathBuf::from("logs"))
+        });
+
+    // Get log level from env or default to info
+    let log_level = std::env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
+
+    Logger::try_with_str(&log_level)?
+        .log_to_file(FileSpec::default().directory(log_dir))
+        .rotate(
+            Criterion::Size(5 * 1024 * 1024), // 5MB per file
+            Naming::Numbers,                  // Use numbers (lightbot.log, lightbot.log.1, etc.)
+            Cleanup::KeepLogFiles(3),         // Keep 3 files max
+        )
+        .write_mode(flexi_logger::WriteMode::Async)
+        .start()?;
+
+    log::info!("Logger initialized with level: {}", log_level);
+    Ok(())
 }
 
-/// Simple file logger for debugging packaged app issues
+/// Log a message (shim for flexi_logger)
 fn log_to_file(msg: &str) {
-    if let Some(log_file) = get_log_path() {
-        let _ = std::fs::create_dir_all(log_file.parent().unwrap());
-        let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-        let _ = std::fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(log_file)
-            .and_then(|mut f| writeln!(f, "[{}] {}", timestamp, msg));
-    }
+    log::info!("{}", msg);
 }
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
@@ -216,7 +232,7 @@ async fn spawn_python_sidecar<R: Runtime>(
     println!("{}", msg);
     log_to_file(&msg);
 
-    // Spawn the Python sidecar process with output redirected to log
+    // Spawn the Python sidecar process
     let mut command = std::process::Command::new(sidecar_path);
     command.arg("--port").arg(port.to_string());
 
@@ -225,19 +241,27 @@ async fn spawn_python_sidecar<R: Runtime>(
         command.env("PYTHONUNBUFFERED", "1");
     }
 
-    // Redirect stdout/stderr to log file for debugging
-    if let Some(log_path) = get_log_path() {
-        use std::fs::OpenOptions;
-        let log_file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&log_path)
-            .ok();
-        if let Some(log) = log_file {
-            command.stdout(log.try_clone().expect("Failed to clone log file handle"));
-            command.stderr(log);
-            log_to_file("Sidecar stdout/stderr redirected to log file");
-        }
+    // Redirect sidecar stdout/stderr to the rotating log file
+    // With Naming::Numbers, the current file is always lightbot.log
+    let log_dir = std::env::var("LOG_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            dirs::home_dir()
+                .map(|h| h.join(".lightbot").join("logs"))
+                .unwrap_or_else(|| std::path::PathBuf::from("logs"))
+        });
+    let _ = std::fs::create_dir_all(&log_dir);
+    let log_file_path = log_dir.join("lightbot.log");
+    
+    use std::fs::OpenOptions;
+    if let Ok(log_file) = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_file_path) 
+    {
+        command.stdout(log_file.try_clone().expect("Failed to clone log handle"));
+        command.stderr(log_file);
+        log::info!("Sidecar output redirected to rotating log: {:?}", log_file_path);
     }
 
     let child = match command.spawn() {
@@ -309,7 +333,11 @@ fn get_sidecar_status(state: tauri::State<SidecarState>) -> Result<u16, String> 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    log_to_file("=== LightBot App Starting ===");
+    // Initialize logger first (before anything else)
+    if let Err(e) = setup_logger() {
+        eprintln!("Failed to initialize logger: {}", e);
+    }
+    log::info!("=== LightBot App Starting ===");
     
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
