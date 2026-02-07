@@ -36,7 +36,7 @@ fn setup_logger() -> Result<(), Box<dyn std::error::Error>> {
 fn log_to_file(msg: &str) {
     log::info!("{}", msg);
 }
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, Runtime};
 
@@ -91,11 +91,10 @@ fn toggle_window_visibility<R: Runtime>(app: &tauri::AppHandle<R>) {
 }
 
 fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
+    // Menu has "Show" and "Quit" - click tray icon only shows menu
     let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
     let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let separator = PredefinedMenuItem::separator(app)?;
-
-    let menu = Menu::with_items(app, &[&show_i, &separator, &quit_i])?;
+    let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
 
     // Load tray icon (32x32 for standard, scales on retina)
     let icon = load_png_icon(include_bytes!("../icons/32x32.png"));
@@ -114,11 +113,7 @@ fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()>
                 app.exit(0);
             }
         })
-        .on_tray_icon_event(|tray, event| {
-            if let tauri::tray::TrayIconEvent::Click { .. } = event {
-                toggle_window_visibility(tray.app_handle());
-            }
-        })
+        // No on_tray_icon_event handler - click just shows menu
         .build(app)?;
 
     Ok(())

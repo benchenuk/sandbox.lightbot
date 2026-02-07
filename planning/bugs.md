@@ -12,5 +12,5 @@
 11. [x] Hardcoded build info
 12. [x] white icon on menu bar
 13. [x] "Backend not connected". Add logging. 
-14. [ ] Tray icon remove "show". And change it to right-click only to show menu "quit" item. 
+14. [x] Clicking on tray icon show the drop down menu only. Clicking on "Show" to bring the window to the front. 
 
