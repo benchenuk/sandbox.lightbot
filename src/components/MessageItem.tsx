@@ -51,7 +51,7 @@ export default function MessageItem({ message }: MessageItemProps) {
         ) : (
           <div className="markdown text-text-primary text-base">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {message.content}
+              {message.content.replace(/<think>[\s\S]*?(?:<\/think>|$)/g, "").trim()}
             </ReactMarkdown>
           </div>
         )}

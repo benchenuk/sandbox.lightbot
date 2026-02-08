@@ -8,7 +8,7 @@
 - [x] Menubar access
 - [x] Global hotkey, configurable, to bring up the chat window
 - [ ] Expandable and resizable input message box. With arrow at the end of the box, once clicked, the box pops taller (buttons remain the the bottom) and also becomes resizable. 
-- [ ] Handle <think> reasoning output
+- [x] Handle <think> reasoning output
 - [ ] Drop-up model selection
 - [ ] Voice dictation
 - [ ] Optional voice reply
