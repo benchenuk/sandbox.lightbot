@@ -14,3 +14,4 @@
 13. [x] "Backend not connected". Add logging. 
 14. [x] Clicking on tray icon show the drop down menu only. Clicking on "Show" to bring the window to the front. 
 15. [ ] Support "shift+enter" to new line.
+16. [ ] Chat window clears up when model selection and settings are changes. """Move the ChatWindow outside the conditional and use CSS to show/hide instead of mounting/unmounting:""

@@ -9,8 +9,6 @@ interface SettingsPanelProps {
 }
 
 interface Settings {
-  apiBase: string;
-  model: string;
   fastModel: string;
   apiKey: string;
   searchProvider: "ddgs" | "searxng";
@@ -20,8 +18,6 @@ interface Settings {
 }
 
 const emptySettings: Settings = {
-  apiBase: "",
-  model: "",
   fastModel: "",
   apiKey: "",
   searchProvider: "ddgs",
@@ -53,9 +49,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
 
         // Use backend values (may be empty strings)
         setSettings({
-          apiBase: backendSettings.base_url || "",
-          model: backendSettings.model || "",
-          fastModel: backendSettings.fast_model || backendSettings.model || "",
+          fastModel: backendSettings.fast_model || "",
           apiKey: backendSettings.api_key || "",
           searchProvider: (backendSettings.search_provider as Settings["searchProvider"]) || "ddgs",
           searchUrl: backendSettings.search_url || "",
@@ -83,9 +77,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
     try {
       // Map UI settings to backend format
       const backendSettings = {
-        model: settings.model,
         fast_model: settings.fastModel,
-        base_url: settings.apiBase,
         api_key: settings.apiKey,
         system_prompt: settings.systemPrompt,
         search_provider: settings.searchProvider,
@@ -232,23 +224,6 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
           <>
             <div>
               <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
-                API Base
-              </label>
-              <input
-                type="text"
-                value={settings.apiBase}
-                onChange={(e) => updateSetting("apiBase", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
-                         text-text-primary text-sm focus:outline-none focus:border-accent"
-                placeholder="http://localhost:11434"
-              />
-              <p className="text-text-disabled text-xs mt-1">
-                Ollama, OpenAI, or compatible API endpoint
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
                 API Key (Optional)
               </label>
               <input
@@ -258,20 +233,6 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                 className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
                          text-text-primary text-sm focus:outline-none focus:border-accent"
                 placeholder="sk-... (leave blank for local models)"
-              />
-            </div>
-
-            <div>
-              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
-                Model
-              </label>
-              <input
-                type="text"
-                value={settings.model}
-                onChange={(e) => updateSetting("model", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
-                         text-text-primary text-sm focus:outline-none focus:border-accent"
-                placeholder="llama3.2, gpt-4, etc."
               />
             </div>
 

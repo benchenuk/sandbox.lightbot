@@ -17,9 +17,11 @@ function App() {
     return "medium";
   });
   const [hotkey, setHotkey] = useState("Command+Shift+O");
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [selectedModelIndex, setSelectedModelIndex] = useState(0);
   const { isReady, error, port: sidecarPort } = useSidecar();
 
-  // Fetch initial hotkey from backend
+  // Fetch settings from backend
   useEffect(() => {
     const fetchSettings = async () => {
       if (sidecarPort) {
@@ -28,6 +30,8 @@ function App() {
           if (response.ok) {
             const data = await response.json();
             if (data.hotkey) setHotkey(data.hotkey);
+            if (data.available_models) setAvailableModels(data.available_models);
+            if (typeof data.model_index === "number") setSelectedModelIndex(data.model_index);
           }
         } catch (err) {
           console.error("Failed to fetch settings:", err);
@@ -36,6 +40,27 @@ function App() {
     };
     fetchSettings();
   }, [sidecarPort]);
+
+  // Handle model selection change
+  const handleModelChange = async (index: number) => {
+    if (!sidecarPort || index === selectedModelIndex) return;
+    
+    try {
+      const response = await fetch(`http://127.0.0.1:${sidecarPort}/settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model_index: index }),
+      });
+      
+      if (response.ok) {
+        setSelectedModelIndex(index);
+      } else {
+        console.error("Failed to update model selection");
+      }
+    } catch (err) {
+      console.error("Error updating model:", err);
+    }
+  };
 
   // Apply font size class to document and save to localStorage
   useEffect(() => {
@@ -78,6 +103,10 @@ function App() {
         showSettings={showSettings}
         isPinned={isPinned}
         onPin={handlePin}
+        availableModels={availableModels}
+        selectedModelIndex={selectedModelIndex}
+        onModelChange={handleModelChange}
+        apiPort={sidecarPort}
       />
 
       {/* Main Content */}
