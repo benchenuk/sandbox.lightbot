@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::process::Child;
 use std::sync::Mutex;
-use tauri::menu::{Menu, MenuItem};
+use tauri::menu::{CheckMenuItem, Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, Runtime};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
@@ -13,6 +13,10 @@ struct SidecarState {
 
 struct HotkeyState {
     current_shortcut: Mutex<Option<Shortcut>>,
+}
+
+struct WindowState {
+    visible_on_all_workspaces: Mutex<bool>,
 }
 
 /// Decode PNG bytes to RGBA image data
@@ -61,10 +65,16 @@ fn toggle_window_visibility<R: Runtime>(app: &tauri::AppHandle<R>) {
 }
 
 fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()> {
-    // Menu has "Show" and "Quit" - click tray icon only shows menu
+    // Get current setting from state
+    let window_state = app.state::<WindowState>();
+    let visible_on_all = *window_state.visible_on_all_workspaces.lock().unwrap();
+    
+    // Menu items
     let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
+    let all_workspaces_i = CheckMenuItem::with_id(app, "all_workspaces", "Show on All Workspaces", true, visible_on_all, None::<&str>)?;
     let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+    
+    let menu = Menu::with_items(app, &[&show_i, &all_workspaces_i, &quit_i])?;
 
     // Load tray icon (32x32 for standard, scales on retina)
     let icon = load_png_icon(include_bytes!("../icons/32x32.png"));
@@ -72,12 +82,26 @@ fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()>
     let _tray = TrayIconBuilder::new()
         .icon(icon)
         .menu(&menu)
-        .on_menu_event(|app, event| {
+        .on_menu_event(move |app, event| {
             let event_id = event.id.as_ref();
             if event_id == "show" {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.show();
                     let _ = window.set_focus();
+                }
+            } else if event_id == "all_workspaces" {
+                if let Some(window) = app.get_webview_window("main") {
+                    let window_state = app.state::<WindowState>();
+                    let mut current = window_state.visible_on_all_workspaces.lock().unwrap();
+                    let new_value = !*current;
+                    
+                    if let Err(e) = window.set_visible_on_all_workspaces(new_value) {
+                        eprintln!("Failed to set visible_on_all_workspaces: {:?}", e);
+                    } else {
+                        *current = new_value;
+                        println!("Set visible_on_all_workspaces to: {}", new_value);
+                        // Note: CheckMenuItem state is toggled automatically by the OS
+                    }
                 }
             } else if event_id == "quit" {
                 app.exit(0);
@@ -333,6 +357,19 @@ fn update_hotkey(
     Ok(normalized_hotkey)
 }
 
+#[tauri::command]
+fn set_visible_on_all_workspaces(
+    app: tauri::AppHandle,
+    visible: bool,
+) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.set_visible_on_all_workspaces(visible)
+            .map_err(|e| format!("Failed to set visible_on_all_workspaces: {:?}", e))?;
+        println!("Set visible_on_all_workspaces to: {}", visible);
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     
@@ -347,7 +384,10 @@ pub fn run() {
         .manage(HotkeyState {
             current_shortcut: Mutex::new(None),
         })
-        .invoke_handler(tauri::generate_handler![get_sidecar_status, update_hotkey])
+        .manage(WindowState {
+            visible_on_all_workspaces: Mutex::new(false),
+        })
+        .invoke_handler(tauri::generate_handler![get_sidecar_status, update_hotkey, set_visible_on_all_workspaces])
         .setup(|app| {
             // Load .env file for configuration (before hotkey setup)
             load_dotenv();
