@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import ChatWindow from "./components/ChatWindow";
 import SettingsPanel from "./components/SettingsPanel";
-import TitleBar from "./components/TitleBar";
+import TitleBar, { type ModelConfig } from "./components/TitleBar";
 import { useSidecar } from "./hooks/useSidecar";
 
 function App() {
@@ -17,7 +17,7 @@ function App() {
     return "medium";
   });
   const [hotkey, setHotkey] = useState("Command+Shift+O");
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [models, setModels] = useState<ModelConfig[]>([]);
   const [selectedModelIndex, setSelectedModelIndex] = useState(0);
   const { isReady, error, port: sidecarPort } = useSidecar();
 
@@ -30,7 +30,7 @@ function App() {
           if (response.ok) {
             const data = await response.json();
             if (data.hotkey) setHotkey(data.hotkey);
-            if (data.available_models) setAvailableModels(data.available_models);
+            if (data.models) setModels(data.models);
             if (typeof data.model_index === "number") setSelectedModelIndex(data.model_index);
           }
         } catch (err) {
@@ -103,7 +103,7 @@ function App() {
         showSettings={showSettings}
         isPinned={isPinned}
         onPin={handlePin}
-        availableModels={availableModels}
+        models={models}
         selectedModelIndex={selectedModelIndex}
         onModelChange={handleModelChange}
         apiPort={sidecarPort}

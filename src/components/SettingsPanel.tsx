@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import ModelConfigEditor, { type ModelConfig } from "./ModelConfigEditor";
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -9,8 +10,10 @@ interface SettingsPanelProps {
 }
 
 interface Settings {
-  fastModel: string;
-  apiKey: string;
+  models: ModelConfig[];
+  modelIndex: number;
+  fastModels: ModelConfig[];
+  fastModelIndex: number;
   searchProvider: "ddgs" | "searxng";
   searchUrl: string;
   hotkey: string;
@@ -18,8 +21,10 @@ interface Settings {
 }
 
 const emptySettings: Settings = {
-  fastModel: "",
-  apiKey: "",
+  models: [],
+  modelIndex: 0,
+  fastModels: [],
+  fastModelIndex: 0,
   searchProvider: "ddgs",
   searchUrl: "",
   hotkey: "Command+Shift+O",
@@ -29,7 +34,7 @@ const emptySettings: Settings = {
 export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, apiPort }: SettingsPanelProps) {
   const [settings, setSettings] = useState<Settings>(emptySettings);
   const [initialHotkey, setInitialHotkey] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"general" | "llm" | "search">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "llm" | "search">("llm");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,10 +52,12 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
 
         const backendSettings = await response.json();
 
-        // Use backend values (may be empty strings)
+        // Use backend values (may be empty arrays)
         setSettings({
-          fastModel: backendSettings.fast_model || "",
-          apiKey: backendSettings.api_key || "",
+          models: backendSettings.models || [],
+          modelIndex: backendSettings.model_index || 0,
+          fastModels: backendSettings.fast_models || [],
+          fastModelIndex: backendSettings.fast_model_index || 0,
           searchProvider: (backendSettings.search_provider as Settings["searchProvider"]) || "ddgs",
           searchUrl: backendSettings.search_url || "",
           hotkey: backendSettings.hotkey || "Command+Shift+O",
@@ -77,8 +84,10 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
     try {
       // Map UI settings to backend format
       const backendSettings = {
-        fast_model: settings.fastModel,
-        api_key: settings.apiKey,
+        models: settings.models,
+        model_index: settings.modelIndex,
+        fast_models: settings.fastModels,
+        fast_model_index: settings.fastModelIndex,
         system_prompt: settings.systemPrompt,
         search_provider: settings.searchProvider,
         search_url: settings.searchUrl,
@@ -109,6 +118,14 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
     } catch (err) {
       setError("Failed to save settings to backend");
     }
+  };
+
+  const handleModelsChange = (models: ModelConfig[], selectedIndex: number) => {
+    setSettings((prev) => ({ ...prev, models, modelIndex: selectedIndex }));
+  };
+
+  const handleFastModelsChange = (fastModels: ModelConfig[], selectedIndex: number) => {
+    setSettings((prev) => ({ ...prev, fastModels, fastModelIndex: selectedIndex }));
   };
 
   const updateSetting = <K extends keyof Settings>(
@@ -152,7 +169,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
 
       {/* Tabs */}
       <div className="flex border-b border-border-subtle">
-        {(["general", "llm", "search"] as const).map((tab) => (
+        {(["llm", "search", "general"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -167,7 +184,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 space-y-4">
         {activeTab === "general" && (
           <div className="flex flex-col h-full">
             <div className="space-y-3">
@@ -221,49 +238,39 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
         )}
 
         {activeTab === "llm" && (
-          <>
-            <div>
-              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
-                API Key (Optional)
-              </label>
-              <input
-                type="password"
-                value={settings.apiKey}
-                onChange={(e) => updateSetting("apiKey", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
-                         text-text-primary text-sm focus:outline-none focus:border-accent"
-                placeholder="sk-... (leave blank for local models)"
+          <div className="flex flex-col h-full min-h-0">
+            {/* Model sections - scrollable */}
+            <div className="flex-shrink-0 space-y-4 pb-4">
+              {/* Models Section */}
+              <ModelConfigEditor
+                title="Models"
+                models={settings.models}
+                selectedIndex={settings.modelIndex}
+                onModelsChange={handleModelsChange}
+              />
+
+              {/* Fast Models Section */}
+              <ModelConfigEditor
+                title="Fast Models"
+                models={settings.fastModels}
+                selectedIndex={settings.fastModelIndex}
+                onModelsChange={handleFastModelsChange}
               />
             </div>
 
-            <div>
-              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
-                Fast Model (for query rewriting)
-              </label>
-              <input
-                type="text"
-                value={settings.fastModel}
-                onChange={(e) => updateSetting("fastModel", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
-                         text-text-primary text-sm focus:outline-none focus:border-accent"
-                placeholder="llama3.2, gpt-3.5-turbo, etc."
-              />
-            </div>
-
-            <div>
-              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
+            {/* System Prompt - Takes remaining space */}
+            <div className="flex-1 min-h-0 border-t border-border-subtle pt-4 flex flex-col">
+              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5 flex-shrink-0">
                 System Prompt
               </label>
               <textarea
                 value={settings.systemPrompt}
                 onChange={(e) => updateSetting("systemPrompt", e.target.value)}
-                rows={5}
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
-                         text-text-primary text-sm focus:outline-none focus:border-accent font-sans"
+                className="flex-1 min-h-0 w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
+                         text-text-primary text-sm focus:outline-none focus:border-accent font-sans resize-none"
               />
             </div>
-
-          </>
+          </div>
         )}
 
         {activeTab === "search" && (
@@ -312,7 +319,8 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
         <button
           onClick={handleSave}
           className="w-full py-1.5 bg-accent text-white text-sm rounded-md
-                     hover:bg-accent-hover transition-colors font-medium"        >
+                     hover:bg-accent-hover transition-colors font-medium"
+        >
           Save Settings
         </button>
       </div>

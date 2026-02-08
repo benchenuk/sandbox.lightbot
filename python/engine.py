@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from collections import defaultdict
@@ -31,12 +32,14 @@ else:
 # Restart app after editing this file
 
 # LLM Configuration
-# Comma-separated list of available models
-LLM_MODELS=
-# Index (0-based) of the currently selected model from LLM_MODELS
+# JSON array of model configurations: [{"name": "...", "url": "...", "key": "..."}]
+LLM_MODELS=[]
+# Index (0-based) of the currently selected model
 LLM_MODEL_INDEX=0
-LLM_BASE_URL=
-LLM_API_KEY=
+# JSON array of fast model configurations for query rewriting
+LLM_FAST_MODELS=[]
+# Index (0-based) of the currently selected fast model
+LLM_FAST_MODEL_INDEX=0
 LLM_SYSTEM_PROMPT=You are a helpful AI assistant with web search capabilities.
 
 # Search Configuration
@@ -72,31 +75,55 @@ class ChatEngine:
         # Reload env file to pick up any external changes
         load_dotenv(ENV_FILE_PATH, override=True)
 
-        # Load available models from LLM_MODELS (comma-separated list)
-        models_str = os.getenv("LLM_MODELS", "")
-        self.available_models: list[str] = [
-            m.strip() for m in models_str.split(",") if m.strip()
-        ]
+        # Load model configurations from JSON arrays
+        self.models: list[dict] = self._load_models_config("LLM_MODELS")
+        self.fast_models: list[dict] = self._load_models_config("LLM_FAST_MODELS")
 
-        # Load selected model index
+        # Load selected model indices
         try:
             self.model_index: int = int(os.getenv("LLM_MODEL_INDEX", "0"))
         except ValueError:
             self.model_index = 0
 
-        # Ensure index is valid
-        if not self.available_models:
-            self.model_index = 0
-        elif self.model_index >= len(self.available_models):
-            self.model_index = 0
+        try:
+            self.fast_model_index: int = int(os.getenv("LLM_FAST_MODEL_INDEX", "0"))
+        except ValueError:
+            self.fast_model_index = 0
 
-        # Current active model from the list
+        # Ensure indices are valid
+        if self.model_index >= len(self.models):
+            self.model_index = 0
+        if self.fast_model_index >= len(self.fast_models):
+            self.fast_model_index = 0
+
+        # Current active model configuration
         self.model: str = (
-            self.available_models[self.model_index] if self.available_models else ""
+            self.models[self.model_index].get("name", "") if self.models else ""
         )
-        self.fast_model: str = os.getenv("LLM_FAST_MODEL", "")
-        self.base_url: str = os.getenv("LLM_BASE_URL", "")
-        self.api_key: str = os.getenv("LLM_API_KEY", "").strip()
+        self.base_url: str = (
+            self.models[self.model_index].get("url", "") if self.models else ""
+        )
+        self.api_key: str = (
+            self.models[self.model_index].get("key", "").strip() if self.models else ""
+        )
+
+        # Fast model configuration
+        self.fast_model: str = (
+            self.fast_models[self.fast_model_index].get("name", "")
+            if self.fast_models
+            else ""
+        )
+        self.fast_base_url: str = (
+            self.fast_models[self.fast_model_index].get("url", "")
+            if self.fast_models
+            else ""
+        )
+        self.fast_api_key: str = (
+            self.fast_models[self.fast_model_index].get("key", "").strip()
+            if self.fast_models
+            else ""
+        )
+
         self.system_prompt: str = os.getenv(
             "LLM_SYSTEM_PROMPT", self._default_system_prompt()
         )
@@ -122,33 +149,39 @@ class ChatEngine:
         self._log_settings()
         self._init_llms()
 
+    def _load_models_config(self, env_var: str) -> list[dict]:
+        """Load model configurations from JSON environment variable."""
+        json_str = os.getenv(env_var, "")
+        if not json_str:
+            return []
+        try:
+            models = json.loads(json_str)
+            if isinstance(models, list):
+                # Filter out empty configs
+                return [m for m in models if m.get("name", "").strip()]
+        except json.JSONDecodeError:
+            logger.warning(f"Failed to parse {env_var} as JSON")
+        return []
+
     def _log_settings(self):
         """Log current configuration settings (masking API key)."""
         logger.info("=== LightBot Engine Configuration ===")
-        if self.available_models:
-            models_display = ", ".join(
-                [
-                    f"* {m}" if i == self.model_index else m
-                    for i, m in enumerate(self.available_models)
-                ]
-            )
-            logger.info(f"Available Models: {models_display}")
-        logger.info(f"Selected Model:  {self.model} (index: {self.model_index})")
-        logger.info(f"Fast Model:      {self.fast_model}")
-        logger.info(f"API Base URL:    {self.base_url}")
+        if self.models:
+            logger.info(f"Models Configured: {len(self.models)}")
+            for i, m in enumerate(self.models):
+                marker = "* " if i == self.model_index else "  "
+                logger.info(
+                    f"  {marker}{m.get('name', 'unnamed')} @ {m.get('url', 'no-url')}"
+                )
+        if self.fast_models:
+            logger.info(f"Fast Models: {len(self.fast_models)}")
+            for i, m in enumerate(self.fast_models):
+                marker = "* " if i == self.fast_model_index else "  "
+                logger.info(
+                    f"  {marker}{m.get('name', 'unnamed')} @ {m.get('url', 'no-url')}"
+                )
         logger.info(f"Search Provider: {self.search_provider}")
         logger.info(f"Search URL:      {self.search_url or 'N/A'}")
-
-        # Mask API key for security
-        if self.api_key:
-            masked_key = (
-                f"{self.api_key[:4]}...{self.api_key[-4:]}"
-                if len(self.api_key) > 8
-                else "****"
-            )
-            logger.info(f"API Key:         {masked_key}")
-        else:
-            logger.info("API Key:         Not Set (using dummy-key)")
 
         logger.info(f"System Prompt:   {self.system_prompt[:50]}...")
         logger.info("======================================")
@@ -178,10 +211,14 @@ class ChatEngine:
                 is_chat_model=True,
                 timeout=60.0,
             )
+            # Use fast model's own config, fallback to primary model's config
+            fast_api_key = self.fast_api_key or api_key
+            fast_base_url = self.fast_base_url or self.base_url
+            fast_model_name = self.fast_model or self.model
             self.fast_llm = OpenAILike(
-                model=self.fast_model or self.model,
-                api_key=api_key,
-                api_base=self.base_url,
+                model=fast_model_name,
+                api_key=fast_api_key,
+                api_base=fast_base_url,
                 is_chat_model=True,
                 timeout=30.0,
             )
@@ -340,12 +377,14 @@ class ChatEngine:
         """Get current engine settings."""
         # Reload to pick up any external changes
         load_dotenv(ENV_FILE_PATH, override=True)
+        # Reload model configs to pick up external changes
+        self.models = self._load_models_config("LLM_MODELS")
+        self.fast_models = self._load_models_config("LLM_FAST_MODELS")
         return {
-            "available_models": self.available_models,
+            "models": self.models,
             "model_index": self.model_index,
-            "fast_model": self.fast_model,
-            "base_url": self.base_url,
-            "api_key": self.api_key,
+            "fast_models": self.fast_models,
+            "fast_model_index": self.fast_model_index,
             "system_prompt": self.system_prompt,
             "search_provider": self.search_provider,
             "search_url": self.search_url,
@@ -356,49 +395,81 @@ class ChatEngine:
         """Update engine settings, save to .env file, and reinitialize LLMs if needed."""
         reinitialize = False
 
-        if "available_models" in settings:
-            self.available_models = settings["available_models"]
-            models_str = ",".join(self.available_models)
-            set_key(ENV_FILE_PATH, "LLM_MODELS", models_str)
+        if "models" in settings:
+            self.models = [m for m in settings["models"] if m.get("name", "").strip()]
+            set_key(ENV_FILE_PATH, "LLM_MODELS", json.dumps(self.models))
             # Ensure model_index stays valid
-            if self.model_index >= len(self.available_models):
+            if self.model_index >= len(self.models):
                 self.model_index = 0
-            if self.available_models:
-                self.model = self.available_models[self.model_index]
+            if self.models:
+                self.model = self.models[self.model_index].get("name", "")
+                self.base_url = self.models[self.model_index].get("url", "")
+                self.api_key = self.models[self.model_index].get("key", "").strip()
             reinitialize = True
+
         if "model_index" in settings:
             new_index = settings["model_index"]
-            if isinstance(new_index, int) and 0 <= new_index < len(
-                self.available_models
-            ):
+            if isinstance(new_index, int) and 0 <= new_index < len(self.models):
                 self.model_index = new_index
                 set_key(ENV_FILE_PATH, "LLM_MODEL_INDEX", str(self.model_index))
-                self.model = self.available_models[self.model_index]
+                self.model = self.models[self.model_index].get("name", "")
+                self.base_url = self.models[self.model_index].get("url", "")
+                self.api_key = self.models[self.model_index].get("key", "").strip()
                 reinitialize = True
-        if "fast_model" in settings:
-            self.fast_model = settings["fast_model"]
-            set_key(ENV_FILE_PATH, "LLM_FAST_MODEL", self.fast_model)
+
+        if "fast_models" in settings:
+            self.fast_models = [
+                m for m in settings["fast_models"] if m.get("name", "").strip()
+            ]
+            set_key(ENV_FILE_PATH, "LLM_FAST_MODELS", json.dumps(self.fast_models))
+            # Ensure fast_model_index stays valid
+            if self.fast_model_index >= len(self.fast_models):
+                self.fast_model_index = 0
+            if self.fast_models:
+                self.fast_model = self.fast_models[self.fast_model_index].get(
+                    "name", ""
+                )
+                self.fast_base_url = self.fast_models[self.fast_model_index].get(
+                    "url", ""
+                )
+                self.fast_api_key = (
+                    self.fast_models[self.fast_model_index].get("key", "").strip()
+                )
             reinitialize = True
-        if "base_url" in settings:
-            self.base_url = settings["base_url"]
-            set_key(ENV_FILE_PATH, "LLM_BASE_URL", self.base_url)
-            reinitialize = True
-        if "api_key" in settings:
-            self.api_key = settings["api_key"]
-            set_key(ENV_FILE_PATH, "LLM_API_KEY", self.api_key)
-            reinitialize = True
+
+        if "fast_model_index" in settings:
+            new_index = settings["fast_model_index"]
+            if isinstance(new_index, int) and 0 <= new_index < len(self.fast_models):
+                self.fast_model_index = new_index
+                set_key(
+                    ENV_FILE_PATH, "LLM_FAST_MODEL_INDEX", str(self.fast_model_index)
+                )
+                self.fast_model = self.fast_models[self.fast_model_index].get(
+                    "name", ""
+                )
+                self.fast_base_url = self.fast_models[self.fast_model_index].get(
+                    "url", ""
+                )
+                self.fast_api_key = (
+                    self.fast_models[self.fast_model_index].get("key", "").strip()
+                )
+                reinitialize = True
+
         if "system_prompt" in settings:
             self.system_prompt = settings["system_prompt"]
             set_key(ENV_FILE_PATH, "LLM_SYSTEM_PROMPT", self.system_prompt)
+
         if "search_provider" in settings:
             self.search_provider = settings["search_provider"]
             set_key(ENV_FILE_PATH, "SEARCH_PROVIDER", self.search_provider)
             self.search_tool.update_settings(provider=settings["search_provider"])
             self.query_rewriter.provider = settings["search_provider"]
+
         if "search_url" in settings:
             self.search_url = settings["search_url"]
             set_key(ENV_FILE_PATH, "SEARCH_URL", self.search_url)
             self.search_tool.update_settings(base_url=settings["search_url"])
+
         if "hotkey" in settings:
             set_key(ENV_FILE_PATH, "GLOBAL_HOTKEY", settings["hotkey"])
 

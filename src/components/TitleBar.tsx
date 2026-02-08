@@ -1,12 +1,18 @@
 import { useState } from "react";
 import { Settings, Pin, ChevronDown } from "lucide-react";
 
+export interface ModelConfig {
+  name: string;
+  url: string;
+  key: string;
+}
+
 interface TitleBarProps {
   onSettings: () => void;
   showSettings: boolean;
   isPinned: boolean;
   onPin: () => void;
-  availableModels: string[];
+  models: ModelConfig[];
   selectedModelIndex: number;
   onModelChange: (index: number) => void;
   apiPort: number | null;
@@ -17,7 +23,7 @@ export default function TitleBar({
   showSettings,
   isPinned,
   onPin,
-  availableModels,
+  models,
   selectedModelIndex,
   onModelChange,
 }: TitleBarProps) {
@@ -29,8 +35,8 @@ export default function TitleBar({
   };
 
   // Show placeholder if no models configured
-  const currentModelName = availableModels[selectedModelIndex] || "No Model";
-  const hasModels = availableModels.length > 0;
+  const currentModelName = models[selectedModelIndex]?.name || "No Model";
+  const hasModels = models.length > 0;
 
   return (
     <div
@@ -52,8 +58,8 @@ export default function TitleBar({
             className={`flex items-center gap-1 px-2 py-1 text-xs transition-colors rounded-md ${!hasModels
                 ? "text-text-disabled cursor-not-allowed"
                 : isModelDropdownOpen
-                  ? "text-accent bg-accent-subtle"
-                  : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
+                ? "text-accent bg-accent-subtle"
+                : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
               }`}
             title={hasModels ? "Select Model" : "No models configured"}
           >
@@ -73,17 +79,17 @@ export default function TitleBar({
               />
               {/* Dropdown */}
               <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-border-subtle rounded-md shadow-lg z-50 py-1 max-h-64 overflow-y-auto">
-                {availableModels.map((modelName, index) => (
+                {models.map((model, index) => (
                   <button
-                    key={`${modelName}-${index}`}
+                    key={`${model.name}-${index}`}
                     onClick={() => handleModelSelect(index)}
                     className={`w-full text-left px-3 py-1.5 text-xs transition-colors truncate ${selectedModelIndex === index
                         ? "text-accent bg-accent-subtle/50"
                         : "text-text-primary hover:bg-surface-hover"
                       }`}
-                    title={modelName}
+                    title={model.name}
                   >
-                    {modelName}
+                    {model.name}
                   </button>
                 ))}
               </div>
