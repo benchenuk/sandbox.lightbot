@@ -153,28 +153,30 @@ class ChatEngine:
             self.fast_llm = None
 
     
-    async def _rewrite_query(self, message: str, history: List[ChatMessage]) -> str:
+    async def _rewrite_query(self, message: str, history: List[ChatMessage]) -> tuple[str, dict]:
         """Rewrite the user query using conversation history for better search results."""
         if not self.fast_llm:
             logger.warning("Query rewrite skipped: fast_llm not configured")
-            return message
+            return message, {}
         
         try:
             result = await self.query_rewriter.rewrite(message, history, self.fast_llm)
             standalone_query = result["query"]
-            # For now, we just log the extra params as this is a mechanical refactoring
-            if result["params"]:
-                logger.info(f"[DEBUG] Rewrite params: {result['params']}")
+            params = result["params"]
             
-            return standalone_query
+            if params:
+                logger.info(f"[DEBUG] Rewrite params: {params}")
+            
+            return standalone_query, params
         except Exception as e:
             logger.error(f"Error rewriting query: {e}")
-            return message
+            return message, {}
 
-    async def _get_search_context(self, query: str) -> str:
+    async def _get_search_context(self, query: str, search_params: dict | None = None) -> str:
         """Perform search and format results as context."""
         logger.info(f"[EVENT] Web search started via {self.search_tool.display_name}: {query}")
-        results = await self.search_tool.search(query)
+        params = search_params or {}
+        results = await self.search_tool.search(query, **params)
         logger.info(f"[EVENT] Web search completed: {len(results)} results")
         if not results:
             return "No search results found."
@@ -203,8 +205,8 @@ class ChatEngine:
 
         # Handle Search Mode
         if search_mode == "on" or (search_mode == "auto" and False): # Auto deferred
-            standalone_query = await self._rewrite_query(message, history)
-            search_context = await self._get_search_context(standalone_query)
+            standalone_query, search_params = await self._rewrite_query(message, history)
+            search_context = await self._get_search_context(standalone_query, search_params)
             system_p = SEARCH_ANSWER_PROMPT.format(search_results=search_context)
         
         # Build messages
@@ -242,8 +244,8 @@ class ChatEngine:
         logger.info(f"[EVENT] Chat request received - search_mode={search_mode}")
         if search_mode == "on" or (search_mode == "auto" and False): # Auto deferred
             logger.info("[EVENT] Search mode enabled, starting search flow")
-            standalone_query = await self._rewrite_query(message, history)
-            search_context = await self._get_search_context(standalone_query)
+            standalone_query, search_params = await self._rewrite_query(message, history)
+            search_context = await self._get_search_context(standalone_query, search_params)
             system_p = SEARCH_ANSWER_PROMPT.format(search_results=search_context)
             yield f"🔍 Search {self.search_tool.display_name} for: {standalone_query}...\n\n"
         

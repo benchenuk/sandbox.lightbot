@@ -15,9 +15,9 @@ Take advantage of query parameters supported SearXNG Search API to improve searc
 - format : optional - [ json, csv, rss ] Output format of results. Format needs to be activated in search:. 
 
 ## Useful Paramters 
-- categories
-- time_range
-- format=json
+- **categories**
+- **time_range**
+- **format=json**
 
 ### Useful Categories and Sub-Categories
 - general

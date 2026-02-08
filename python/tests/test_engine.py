@@ -20,8 +20,12 @@ def chat_engine():
 @pytest.mark.asyncio
 async def test_rewrite_query_no_history(chat_engine):
     query = "Who is he?"
-    rewritten = await chat_engine._rewrite_query(query, [])
+    # Mock rewrite to return original query
+    chat_engine.query_rewriter.rewrite = AsyncMock(return_value={"query": query, "params": {}})
+    
+    rewritten, params = await chat_engine._rewrite_query(query, [])
     assert rewritten == query
+    assert params == {}
 
 @pytest.mark.asyncio
 async def test_rewrite_query_with_history(chat_engine):
@@ -32,19 +36,22 @@ async def test_rewrite_query_with_history(chat_engine):
     ]
     
     # Mock fast_llm response
-    mock_response = MagicMock()
-    mock_response.text = "How old is Tim Cook?"
-    chat_engine.fast_llm.acomplete.return_value = mock_response
+    chart_engine_mock_rewrite_result = {
+        "query": "How old is Tim Cook?",
+        "params": {}
+    }
+    chat_engine.query_rewriter.rewrite = AsyncMock(return_value=chart_engine_mock_rewrite_result)
     
-    rewritten = await chat_engine._rewrite_query(query, history)
+    rewritten, params = await chat_engine._rewrite_query(query, history)
     
     assert rewritten == "How old is Tim Cook?"
-    chat_engine.fast_llm.acomplete.assert_called_once()
+    assert params == {}
+    chat_engine.query_rewriter.rewrite.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_chat_search_on(chat_engine):
     # Setup mocks
-    chat_engine._rewrite_query = AsyncMock(return_value="standalone query")
+    chat_engine._rewrite_query = AsyncMock(return_value=("standalone query", {"categories": "it"}))
     chat_engine._get_search_context = AsyncMock(return_value="search results")
     
     mock_chat_response = MagicMock()
@@ -55,4 +62,4 @@ async def test_chat_search_on(chat_engine):
     
     assert response == "Answer based on search"
     chat_engine._rewrite_query.assert_called_once()
-    chat_engine._get_search_context.assert_called_once()
+    chat_engine._get_search_context.assert_called_once_with("standalone query", {"categories": "it"})
