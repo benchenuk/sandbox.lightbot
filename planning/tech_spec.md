@@ -96,7 +96,7 @@ LightBot uses a "Sidecar" architecture where a compiled Python binary runs as a 
 | Server | Uvicorn | 0.32+ | ✅ Ready |
 | AI Framework | LlamaIndex | 0.12+ | ✅ Ready |
 | LLM Support | OpenAI-compatible API | - | ✅ Ready |
-| Search | duckduckgo-search | 6.3+ | ✅ Ready |
+| Search | ddgs | 6.3+ | ✅ Ready |
 | Bundling | PyInstaller | 6.11+ | ✅ Ready |
 
 ---

@@ -22,7 +22,7 @@
     - [x] Markdown Rendering & Copy-to-Clipboard
     - [x] Settings Page (LLM Selection, Search Providers, Hotkeys)
 - [x] Web Search Capability
-    - [x] Integrate Search Tool (DuckDuckGo, SearXNG)
+    - [x] Integrate Search Tool (DDGS, SearXNG)
     - [x] UI toggle for web search options
     - [x] Connect Search to Chat Logic (Query Rewrite Pipeline)
 - [x] Packaging and Distribution

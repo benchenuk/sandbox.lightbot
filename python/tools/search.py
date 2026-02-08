@@ -1,7 +1,6 @@
 """
 Web Search Tool
-Supports DuckDuckGo (default) and SearXNG providers.
-"""
+Supports DDGS (default) and SearXNG providers."""
 
 from typing import Any
 
@@ -9,28 +8,28 @@ from typing import Any
 class SearchTool:
     """Web search tool for retrieving current information."""
     
-    def __init__(self, provider: str = "duckduckgo", base_url: str | None = None):
+    def __init__(self, provider: str = "ddgs", base_url: str | None = None):
         self.provider = provider
         self.base_url = base_url
 
     @property
     def display_name(self) -> str:
         """Return human-readable provider name."""
-        return "DuckDuckGo" if self.provider == "duckduckgo" else "SearXNG"
+        return "DDGS" if self.provider == "ddgs" else "SearXNG"
     
     async def search(self, query: str, max_results: int = 5) -> list[dict[str, Any]]:
         """Perform a web search and return results."""
-        if self.provider == "duckduckgo":
-            return await self._search_duckduckgo(query, max_results)
+        if self.provider == "ddgs":
+            return await self._search_ddgs(query, max_results)
         elif self.provider == "searxng":
             return await self._search_searxng(query, max_results)
         else:
             raise ValueError(f"Unknown search provider: {self.provider}")
     
-    async def _search_duckduckgo(
+    async def _search_ddgs(
         self, query: str, max_results: int
     ) -> list[dict[str, Any]]:
-        """Search using DuckDuckGo."""
+        """Search using DDGS."""
         try:
             from ddgs import DDGS
             

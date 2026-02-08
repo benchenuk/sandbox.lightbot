@@ -37,7 +37,7 @@ LLM_API_KEY=
 LLM_SYSTEM_PROMPT=You are a helpful AI assistant with web search capabilities.
 
 # Search Configuration
-SEARCH_PROVIDER=duckduckgo
+SEARCH_PROVIDER=ddgs
 SEARCH_URL=
 
 # UI Configuration
@@ -76,7 +76,7 @@ class ChatEngine:
         self.system_prompt: str = os.getenv("LLM_SYSTEM_PROMPT", self._default_system_prompt())
         
         # Search settings
-        self.search_provider: str = os.getenv("SEARCH_PROVIDER", "duckduckgo")
+        self.search_provider: str = os.getenv("SEARCH_PROVIDER", "ddgs")
         self.search_url: str = os.getenv("SEARCH_URL", "")
         
         # Ephemeral memory: session_id -> list of messages

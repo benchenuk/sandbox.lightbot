@@ -13,7 +13,7 @@ interface Settings {
   model: string;
   fastModel: string;
   apiKey: string;
-  searchProvider: "duckduckgo" | "searxng";
+  searchProvider: "ddgs" | "searxng";
   searchUrl: string;
   hotkey: string;
   systemPrompt: string;
@@ -24,7 +24,7 @@ const emptySettings: Settings = {
   model: "",
   fastModel: "",
   apiKey: "",
-  searchProvider: "duckduckgo",
+  searchProvider: "ddgs",
   searchUrl: "",
   hotkey: "Command+Shift+O",
   systemPrompt: "",
@@ -57,7 +57,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
           model: backendSettings.model || "",
           fastModel: backendSettings.fast_model || backendSettings.model || "",
           apiKey: backendSettings.api_key || "",
-          searchProvider: (backendSettings.search_provider as Settings["searchProvider"]) || "duckduckgo",
+          searchProvider: (backendSettings.search_provider as Settings["searchProvider"]) || "ddgs",
           searchUrl: backendSettings.search_url || "",
           hotkey: backendSettings.hotkey || "Command+Shift+O",
           systemPrompt: backendSettings.system_prompt || "",
@@ -322,7 +322,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                 className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
                          text-text-primary text-sm focus:outline-none focus:border-accent"
               >
-                <option value="duckduckgo">DuckDuckGo</option>
+                <option value="ddgs">DDGS</option>
                 <option value="searxng">SearXNG</option>
               </select>
             </div>

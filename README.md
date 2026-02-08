@@ -5,8 +5,7 @@ A lightweight, native MacOS desktop AI chat application with web search capabili
 ## Features
 
 - 🤖 **AI Chat**: Support for OpenAI-compatible LLMs (local or remote)
-- 🔍 **Web Search**: Integrated DuckDuckGo and SearXNG search
-- 💻 **Native App**: Built with Tauri for native MacOS experience
+ - 🔍 **Web Search**: Integrated DDGS and SearXNG search- 💻 **Native App**: Built with Tauri for native MacOS experience
 - ⚡ **Global Hotkey**: Quick access from anywhere (default: `Cmd+Shift+O`)
 - 🔔 **System Tray**: Runs in background with menubar access
 - 🎨 **TUI Style**: Minimalist terminal-inspired design
@@ -46,8 +45,7 @@ A lightweight, native MacOS desktop AI chat application with web search capabili
 - **Backend**: Python + FastAPI
 - **AI Framework**: LlamaIndex
 - **LLM Support**: OpenAI-compatible API (any provider)
-- **Search**: DuckDuckGo, SearXNG
-
+ - **Search**: DDGS, SearXNG
 ## Prerequisites
 
 - Node.js 18+
@@ -155,7 +153,7 @@ Configuration is managed via environment variables (in `.env`) and includes:
 - **Fast Model**: Rewriter model (e.g., `gpt-4o-mini`, `llama3.2`)
 - **Base URL**: OpenAI-compatible API endpoint
 - **API Key**: Authentication key
-- **Search Provider**: DuckDuckGo or SearXNG
+- **Search Provider**: DDGS or SearXNG
 - **Global Hotkey**: Configurable keyboard shortcut
 - **System Prompt**: Customizable AI behavior
 
