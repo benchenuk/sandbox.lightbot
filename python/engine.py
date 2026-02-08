@@ -58,6 +58,7 @@ from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai_like import OpenAILike
 
 from tools.search import SearchTool
+from tools.query_rewrite import QueryRewriter
 from prompts import CONDENSE_QUESTION_PROMPT, SEARCH_ANSWER_PROMPT
 
 
@@ -84,6 +85,9 @@ class ChatEngine:
         
         # Search tool - initialized with env settings
         self.search_tool = SearchTool(provider=self.search_provider, base_url=self.search_url or None)
+        
+        # Query rewriter - initialized with env settings
+        self.query_rewriter = QueryRewriter(provider=self.search_provider)
         
         # Initialize LLMs
         self.llm = None
@@ -151,28 +155,18 @@ class ChatEngine:
     
     async def _rewrite_query(self, message: str, history: List[ChatMessage]) -> str:
         """Rewrite the user query using conversation history for better search results."""
-        logger.info(f"[EVENT] Query rewrite check - history_size={len(history)}")
-        if not history:
-            return message
-        
         if not self.fast_llm:
             logger.warning("Query rewrite skipped: fast_llm not configured")
             return message
         
-        logger.info(f"[EVENT] Query rewrite started using model: {self.fast_model}")
-        # Format history for prompt
-        history_str = "\n".join([f"{m.role.value}: {m.content}" for m in history])
-        prompt = CONDENSE_QUESTION_PROMPT.format(
-            chat_history=history_str, 
-            question=message
-        )
-        
         try:
-            response = await self.fast_llm.acomplete(prompt)
-            standalone_query = response.text.strip()
-            logger.info("[EVENT] Query rewrite completed")
-            # If the model fails or returns empty, fallback to original
-            return standalone_query if standalone_query else message
+            result = await self.query_rewriter.rewrite(message, history, self.fast_llm)
+            standalone_query = result["query"]
+            # For now, we just log the extra params as this is a mechanical refactoring
+            if result["params"]:
+                logger.info(f"[DEBUG] Rewrite params: {result['params']}")
+            
+            return standalone_query
         except Exception as e:
             logger.error(f"Error rewriting query: {e}")
             return message
@@ -322,6 +316,7 @@ class ChatEngine:
             self.search_provider = settings["search_provider"]
             set_key(ENV_FILE_PATH, "SEARCH_PROVIDER", self.search_provider)
             self.search_tool.update_settings(provider=settings["search_provider"])
+            self.query_rewriter.provider = settings["search_provider"]
         if "search_url" in settings:
             self.search_url = settings["search_url"]
             set_key(ENV_FILE_PATH, "SEARCH_URL", self.search_url)

@@ -56,9 +56,10 @@ Take advantage of query parameters supported SearXNG Search API to improve searc
 
 **Example**: /search?q=!news+!it+openai+codex
 
-1. aim for precise match, e.g. lyrics, books
-2. top-level categories, e.g. it, news
-3. general 
+1. aim for precise match, including combination, e.g. lyrics, books, or (it,news)
+2. top-level categories, including combinations, e.g. it, news
+3. fall back to general, always
+<!-- 4. if no result returned, fall back to general -->
 
 ### Time Range
 **Example**: /search?q=openai+codex&time_range=month
