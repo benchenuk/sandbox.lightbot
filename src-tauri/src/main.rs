@@ -4,10 +4,15 @@ use std::sync::Mutex;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, Runtime};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 struct SidecarState {
     port: Mutex<u16>,
     error: Mutex<Option<String>>,
+}
+
+struct HotkeyState {
+    current_shortcut: Mutex<Option<Shortcut>>,
 }
 
 /// Decode PNG bytes to RGBA image data
@@ -27,7 +32,7 @@ fn load_dotenv() {
     
     if dev_env.exists() {
         println!("Loading .env from project root: {:?}", dev_env);
-        let _ = dotenv::from_path(&dev_env);
+        let _ = dotenvy::from_path(&dev_env);
         return;
     }
     
@@ -36,7 +41,7 @@ fn load_dotenv() {
         let user_env = home.join(".lightbot").join(".env");
         if user_env.exists() {
             println!("Loading .env from user home: {:?}", user_env);
-            let _ = dotenv::from_path(&user_env);
+            let _ = dotenvy::from_path(&user_env);
         }
     }
 }
@@ -84,9 +89,7 @@ fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()>
     Ok(())
 }
 
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
-
-fn setup_global_hotkey<R: Runtime>(app: &tauri::AppHandle<R>) -> Result<(), Box<dyn std::error::Error>> {
+fn setup_global_hotkey<R: Runtime>(app: &tauri::AppHandle<R>) -> Result<Shortcut, Box<dyn std::error::Error>> {
     // Read hotkey from env, fallback to Command+Shift+O
     let mut hotkey_str = std::env::var("GLOBAL_HOTKEY").unwrap_or_else(|_| "Command+Shift+O".to_string());
     
@@ -109,12 +112,11 @@ fn setup_global_hotkey<R: Runtime>(app: &tauri::AppHandle<R>) -> Result<(), Box<
     app.global_shortcut()
         .on_shortcut(shortcut, move |app, _shortcut, event| {
             if event.state() == ShortcutState::Pressed {
-                // println!("🔥 Global hotkey '{}' triggered", normalized_hotkey);
                 toggle_window_visibility(app);
             }
         })?;
 
-    Ok(())
+    Ok(shortcut)
 }
 
 async fn spawn_python_sidecar<R: Runtime>(
@@ -286,6 +288,51 @@ fn get_sidecar_status(state: tauri::State<SidecarState>) -> Result<u16, String> 
     }
 }
 
+#[tauri::command]
+fn update_hotkey(
+    app: tauri::AppHandle,
+    hotkey_state: tauri::State<HotkeyState>,
+    new_hotkey: String,
+) -> Result<String, String> {
+    // Parse the new hotkey
+    let mut hotkey_str = new_hotkey.trim().to_string();
+    hotkey_str = hotkey_str.trim_matches(|c| c == '\'' || c == '"').to_string();
+    let normalized_hotkey = hotkey_str.replace("Cmd", "Command");
+    
+    let new_shortcut: Shortcut = match normalized_hotkey.parse() {
+        Ok(s) => s,
+        Err(e) => {
+            return Err(format!("Invalid hotkey '{}': {:?}", normalized_hotkey, e));
+        }
+    };
+
+    let shortcut_manager = app.global_shortcut();
+    
+    // Unregister the old hotkey if exists
+    let mut current = hotkey_state.current_shortcut.lock().map_err(|e| e.to_string())?;
+    if let Some(old_shortcut) = *current {
+        if let Err(e) = shortcut_manager.unregister(old_shortcut) {
+            eprintln!("Failed to unregister old hotkey: {:?}", e);
+        } else {
+            println!("Unregistered old hotkey: {:?}", old_shortcut);
+        }
+    }
+    
+    // Register the new hotkey
+    if let Err(e) = shortcut_manager.on_shortcut(new_shortcut, move |app, _shortcut, event| {
+        if event.state() == ShortcutState::Pressed {
+            toggle_window_visibility(app);
+        }
+    }) {
+        return Err(format!("Failed to register hotkey: {:?}", e));
+    }
+    
+    println!("Successfully updated hotkey to: {}", normalized_hotkey);
+    *current = Some(new_shortcut);
+    
+    Ok(normalized_hotkey)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     
@@ -297,7 +344,10 @@ pub fn run() {
             port: Mutex::new(0),
             error: Mutex::new(None),
         })
-        .invoke_handler(tauri::generate_handler![get_sidecar_status])
+        .manage(HotkeyState {
+            current_shortcut: Mutex::new(None),
+        })
+        .invoke_handler(tauri::generate_handler![get_sidecar_status, update_hotkey])
         .setup(|app| {
             // Load .env file for configuration (before hotkey setup)
             load_dotenv();
@@ -306,7 +356,10 @@ pub fn run() {
             setup_system_tray(app.handle())?;
 
             // Setup global hotkey
-            let _ = setup_global_hotkey(app.handle());
+            if let Ok(shortcut) = setup_global_hotkey(app.handle()) {
+                let hotkey_state = app.state::<HotkeyState>();
+                *hotkey_state.current_shortcut.lock().unwrap() = Some(shortcut);
+            }
 
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {

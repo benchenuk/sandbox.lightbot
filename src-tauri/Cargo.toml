@@ -1,6 +1,6 @@
 [package]
 name = "lightbot"
-version = "1.1.6"
+version = "1.1.7"
 description = "Lightweight AI Chat Bot with Web Search"
 authors = ["LightBot Team"]
 license = "MIT"
@@ -21,7 +21,7 @@ serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", features = ["json"] }
 portpicker = "0.1"
-dotenv = "0.15"
+dotenvy = "0.15"
 dirs = "5.0"
 image = { version = "0.25", default-features = false, features = ["png"] }
 

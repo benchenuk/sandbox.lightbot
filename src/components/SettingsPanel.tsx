@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { AlertCircle } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -101,6 +101,17 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
 
       if (!response.ok) throw new Error("Failed to save settings");
 
+      // Update hotkey in Rust if it changed
+      if (settings.hotkey !== initialHotkey) {
+        try {
+          await invoke("update_hotkey", { newHotkey: settings.hotkey });
+        } catch (e) {
+          console.error("Failed to update hotkey:", e);
+          setError("Settings saved, but failed to update hotkey. Restart required.");
+          return;
+        }
+      }
+
       setError(null);
       onClose();
     } catch (err) {
@@ -200,11 +211,8 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                            text-text-primary text-sm focus:outline-none focus:border-accent"
                   placeholder="e.g., Command+Shift+O"
                 />
-                <p className="text-text-disabled text-xs mt-1 flex items-center gap-1">
-                  {settings.hotkey !== initialHotkey && (
-                    <AlertCircle size={12} className="text-accent" />
-                  )}
-                  Restart required to apply
+                <p className="text-text-disabled text-xs mt-1">
+                  Format: Command+Shift+O, Ctrl+Alt+Space, etc.
                 </p>
               </div>
             </div>
