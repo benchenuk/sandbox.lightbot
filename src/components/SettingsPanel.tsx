@@ -152,7 +152,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
       {/* Error Banner */}
       {error && (
         <div className="px-3 pt-2">
-          <div className="px-3 py-1.5 bg-error/10 border border-error/30 text-error text-xs">
+          <div className="px-3 py-1.5 bg-error/10 border border-error/30 text-error text-xs rounded-md">
             {error}
           </div>
         </div>
@@ -164,7 +164,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 text-xs uppercase tracking-wide transition-colors border-b-2 ${activeTab === tab
+            className={`flex-1 py-2 text-xs uppercase tracking-wide transition-colors border-b-2 rounded-t-md ${activeTab === tab
               ? "text-text-primary border-accent bg-surface-tertiary"
               : "text-text-muted border-transparent hover:text-text-primary hover:bg-surface-hover"
               }`}
@@ -188,7 +188,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                     <button
                       key={size}
                       onClick={() => onFontSizeChange(size)}
-                      className={`flex-1 py-1.5 text-xs capitalize border transition-colors ${fontSize === size
+                      className={`flex-1 py-1.5 text-xs capitalize border transition-colors rounded-md ${fontSize === size
                         ? "border-accent bg-accent-subtle text-text-primary"
                         : "border-border-primary text-text-muted hover:text-text-primary hover:bg-surface-hover"
                         }`}
@@ -207,7 +207,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                   type="text"
                   value={settings.hotkey}
                   onChange={(e) => updateSetting("hotkey", e.target.value)}
-                  className="w-full px-2 py-1.5 bg-surface border border-border-subtle
+                  className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
                            text-text-primary text-sm focus:outline-none focus:border-accent"
                   placeholder="e.g., Command+Shift+O"
                 />
@@ -238,7 +238,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                 type="text"
                 value={settings.apiBase}
                 onChange={(e) => updateSetting("apiBase", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
                          text-text-primary text-sm focus:outline-none focus:border-accent"
                 placeholder="http://localhost:11434"
               />
@@ -255,7 +255,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                 type="password"
                 value={settings.apiKey}
                 onChange={(e) => updateSetting("apiKey", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
                          text-text-primary text-sm focus:outline-none focus:border-accent"
                 placeholder="sk-... (leave blank for local models)"
               />
@@ -269,7 +269,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                 type="text"
                 value={settings.model}
                 onChange={(e) => updateSetting("model", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
                          text-text-primary text-sm focus:outline-none focus:border-accent"
                 placeholder="llama3.2, gpt-4, etc."
               />
@@ -283,7 +283,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                 type="text"
                 value={settings.fastModel}
                 onChange={(e) => updateSetting("fastModel", e.target.value)}
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
                          text-text-primary text-sm focus:outline-none focus:border-accent"
                 placeholder="llama3.2, gpt-3.5-turbo, etc."
               />
@@ -297,7 +297,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                 value={settings.systemPrompt}
                 onChange={(e) => updateSetting("systemPrompt", e.target.value)}
                 rows={5}
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
                          text-text-primary text-sm focus:outline-none focus:border-accent font-sans"
               />
             </div>
@@ -319,7 +319,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                     e.target.value as Settings["searchProvider"]
                   )
                 }
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle
+                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
                          text-text-primary text-sm focus:outline-none focus:border-accent"
               >
                 <option value="duckduckgo">DuckDuckGo</option>
@@ -336,7 +336,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                   type="text"
                   value={settings.searchUrl}
                   onChange={(e) => updateSetting("searchUrl", e.target.value)}
-                  className="w-full px-2 py-1.5 bg-surface border border-border-subtle
+                  className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
                            text-text-primary text-sm focus:outline-none focus:border-accent"
                   placeholder="http://localhost:8080"
                 />
@@ -350,9 +350,8 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
       <div className="p-3 border-t border-border-subtle">
         <button
           onClick={handleSave}
-          className="w-full py-1.5 bg-accent text-white text-sm
-                   hover:bg-accent-hover transition-colors font-medium"
-        >
+          className="w-full py-1.5 bg-accent text-white text-sm rounded-md
+                     hover:bg-accent-hover transition-colors font-medium"        >
           Save Settings
         </button>
       </div>

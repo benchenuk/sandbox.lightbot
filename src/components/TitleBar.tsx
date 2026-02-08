@@ -27,7 +27,7 @@ export default function TitleBar({
       <div className="flex items-center gap-0.5">
         <button
           onClick={onSettings}
-          className={`p-1.5 transition-colors ${showSettings
+          className={`p-1.5 transition-colors rounded-md ${showSettings
             ? "text-accent bg-accent-subtle"
             : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
             }`}
@@ -37,7 +37,7 @@ export default function TitleBar({
         </button>
         <button
           onClick={onPin}
-          className={`p-1.5 transition-colors ${isPinned
+          className={`p-1.5 transition-colors rounded-md ${isPinned
             ? "text-accent bg-accent-subtle"
             : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
             }`}

@@ -109,7 +109,7 @@ function App() {
 
         {/* Settings Panel - overlays on top */}
         {showSettings && (
-          <div className="absolute right-0 top-0 h-full w-72 border-l border-border-subtle bg-surface-secondary animate-in slide-in-from-right duration-150 z-10">
+          <div className="absolute right-0 top-0 h-full w-72 border-l border-border-subtle bg-surface-secondary animate-in slide-in-from-right duration-150 z-10 rounded-tl-md rounded-bl-md">
             <SettingsPanel
               onClose={() => setShowSettings(false)}
               fontSize={fontSize}

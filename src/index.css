@@ -87,7 +87,6 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--border-primary);
-  border-radius: 0;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
@@ -121,7 +120,6 @@ select {
   appearance: none;
   background-image: none;
   background-color: var(--surface-bg);
-  border-radius: 0;
 }
 
 select::-ms-expand {

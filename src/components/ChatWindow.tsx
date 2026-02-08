@@ -10,9 +10,9 @@ function SearchToggle({ mode, onChange }: { mode: SearchMode; onChange: (mode: S
     <button
       type="button"
       onClick={() => onChange(isOn ? "off" : "on")}
-      className={`w-9 h-9 shrink-0 flex items-center justify-center transition-colors ${isOn
-        ? "bg-accent/10 text-accent border border-accent"
-        : "bg-surface text-text-muted border border-border-subtle hover:text-text-primary hover:bg-surface-hover"
+      className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-colors ${isOn
+        ? "bg-accent/10 text-accent border border-accent rounded-lg"
+        : "bg-surface text-text-muted border border-border-subtle hover:text-text-primary hover:bg-surface-hover rounded-lg"
         }`}
       title={isOn ? "Web search: On" : "Web search: Off"}
     >
@@ -102,7 +102,7 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
               type="text"
               placeholder="Type a message..."
               disabled={isStreaming}
-              className="w-full px-3 py-1.5 bg-surface border border-border-subtle
+              className="w-full px-3 py-1.5 bg-surface border border-border-subtle rounded-md
                        text-text-primary placeholder-text-disabled text-base
                        focus:outline-none focus:border-accent
                        disabled:opacity-50 disabled:cursor-not-allowed
@@ -119,7 +119,7 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
             <button
               type="button"
               onClick={stopStreaming}
-              className="w-9 h-9 shrink-0 bg-error/10 border border-error/30 text-error
+              className="w-9 h-9 shrink-0 rounded-full bg-error/10 border border-error/30 text-error
                        hover:bg-error/20 transition-colors flex items-center justify-center"
               title="Stop"
             >
@@ -129,7 +129,7 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
             <button
               type="submit"
               disabled={isStreaming}
-              className="w-9 h-9 shrink-0 bg-accent text-white
+              className="w-9 h-9 shrink-0 rounded-full bg-accent text-white
                        hover:bg-accent-hover transition-colors flex items-center justify-center
                        disabled:opacity-50 disabled:cursor-not-allowed"
               title="Send"
@@ -143,7 +143,7 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
               type="button"
               onClick={() => setShowClearConfirm(true)}
               disabled={isStreaming}
-              className="w-9 h-9 shrink-0 border border-error/30 text-text-muted
+              className="w-9 h-9 shrink-0 rounded-full border border-error/30 text-text-muted
                        hover:text-error hover:border-error/50
                        transition-colors flex items-center justify-center disabled:opacity-50"
               title="Clear chat"
@@ -157,7 +157,7 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
       {/* Clear Chat Confirmation Modal */}
       {showClearConfirm && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-surface-secondary border border-border-subtle p-4 max-w-sm mx-4">
+          <div className="bg-surface-secondary border border-border-subtle p-4 max-w-sm mx-4 rounded-lg">
             <h3 className="text-text-primary font-medium mb-2">Clear Chat?</h3>
             <p className="text-text-muted text-sm mb-4">
               This will delete all messages in the current conversation. This action cannot be undone.
@@ -166,7 +166,7 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
               <button
                 type="button"
                 onClick={() => setShowClearConfirm(false)}
-                className="px-3 py-1.5 text-sm text-text-muted hover:text-text-primary border border-border-subtle hover:bg-surface-hover transition-colors"
+                className="px-3 py-1.5 text-sm rounded-md text-text-muted hover:text-text-primary border border-border-subtle hover:bg-surface-hover transition-colors"
               >
                 Cancel
               </button>
@@ -176,7 +176,7 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
                   clearMessages();
                   setShowClearConfirm(false);
                 }}
-                className="px-3 py-1.5 text-sm bg-error/10 text-error border border-error/30 hover:bg-error/20 transition-colors"
+                className="px-3 py-1.5 text-sm rounded-md bg-error/10 text-error border border-error/30 hover:bg-error/20 transition-colors"
               >
                 Clear
               </button>
