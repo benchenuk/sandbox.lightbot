@@ -10,9 +10,9 @@ function SearchToggle({ mode, onChange }: { mode: SearchMode; onChange: (mode: S
     <button
       type="button"
       onClick={() => onChange(isOn ? "off" : "on")}
-      className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all ${isOn
-        ? "bg-accent/10 text-accent border border-accent"
-        : "bg-surface text-text-muted border border-border-subtle hover:text-text-primary hover:bg-surface-hover"
+      className={`w-11 h-11 shrink-0 rounded-full flex items-center justify-center transition-all ${isOn
+        ? "bg-accent/10 text-accent border border-accent shadow-sm shadow-accent/10"
+        : "bg-surface text-text-muted border border-border-subtle hover:text-text-primary hover:bg-surface-hover shadow-sm"
         }`}
       title={isOn ? "Web search: On" : "Web search: Off"}
     >
@@ -109,34 +109,40 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
       )}
 
       {/* Input Area */}
-      <div className="border-t border-border-subtle bg-surface-secondary p-3">
-        <form onSubmit={handleSubmit} className="flex items-end gap-2">
-          {/* Search Toggle */}
-          <SearchToggle mode={searchMode} onChange={setSearchMode} />
+      <div className="relative border-t border-border-subtle/50 bg-surface-secondary/80 backdrop-blur-md p-4">
+        {/* Subtle top gradient highlight for the premium border feel */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
 
-          {/* Textarea with expand button */}
-          <div className="flex-1 relative">
+        <form onSubmit={handleSubmit} className="flex items-end gap-3 max-w-4xl mx-auto">
+          {/* Search Toggle */}
+          <div className="flex-none">
+            <SearchToggle mode={searchMode} onChange={setSearchMode} />
+          </div>
+
+          {/* Textarea with integrated controls */}
+          <div className="flex-1 relative group/input">
             <textarea
               ref={textareaRef}
               placeholder="Type a message..."
               disabled={isStreaming}
               onKeyDown={handleKeyDown}
-              className={`w-full px-3 bg-surface border border-border-subtle rounded-md
-                       text-text-primary placeholder-text-disabled text-base
-                       focus:outline-none focus:border-accent
+              className={`w-full px-4 bg-surface/50 border border-border-subtle rounded-2xl
+                       text-text-primary placeholder-text-disabled/50 text-base
+                       focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20
                        disabled:opacity-50 disabled:cursor-not-allowed
-                       resize-none leading-5 block transition-all duration-200 ease-in-out
-                       scrollbar-none
-                       ${isExpanded ? "h-48 py-2 overflow-y-auto" : "h-10 py-2.5 overflow-hidden"}`}
+                       resize-none leading-relaxed block transition-all duration-300 ease-in-out
+                       scrollbar-none shadow-inner
+                       ${isExpanded ? "h-64 py-3 overflow-y-auto" : "h-11 py-2.5 overflow-hidden"}`}
             />
 
-            {/* Expand/Collapse button */}
+            {/* Expand/Collapse button - Floating feel */}
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className={`absolute right-1 w-8 h-8 flex items-center justify-center rounded-full
-                       text-text-muted/60 hover:text-accent transition-all
-                       ${isExpanded ? "top-1" : "top-1"}`}
+              className={`absolute right-1.5 w-8 h-8 flex items-center justify-center rounded-full
+                       text-text-muted/40 hover:text-accent hover:bg-accent/5 transition-all
+                       hover:scale-110 active:scale-90
+                       ${isExpanded ? "top-1.5" : "top-1.5"}`}
               title={isExpanded ? "Collapse" : "Expand"}
             >
               {isExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
@@ -145,51 +151,55 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
             {/* Streaming indicator */}
             {isStreaming && (
               <span
-                className="absolute right-10 top-1/2 -translate-y-1/2 text-accent text-base cursor-blink font-mono"
+                className="absolute right-11 top-1/2 -translate-y-1/2 text-accent text-base cursor-blink font-mono opacity-80"
               >
                 ▋
               </span>
             )}
           </div>
 
-          {/* Send/Stop button */}
-          {isStreaming ? (
-            <button
-              type="button"
-              onClick={stopStreaming}
-              className="w-10 h-10 rounded-full bg-error/10 border border-error/30 text-error
-                       hover:bg-error/20 transition-colors flex items-center justify-center shrink-0"
-              title="Stop"
-            >
-              <Square size={14} fill="currentColor" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={isStreaming}
-              className="w-10 h-10 rounded-full bg-accent text-white
-                       hover:bg-accent-hover transition-colors flex items-center justify-center shrink-0
-                       disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Send"
-            >
-              <Send size={18} className="ml-0.5" />
-            </button>
-          )}
+          {/* Action Row: Send & Clear */}
+          <div className="flex-none flex items-center gap-2">
+            {isStreaming ? (
+              <button
+                type="button"
+                onClick={stopStreaming}
+                className="w-11 h-11 rounded-full bg-error/10 border border-error/20 text-error
+                         hover:bg-error/20 hover:scale-105 active:scale-95 
+                         transition-all flex items-center justify-center shadow-lg shadow-error/5"
+                title="Stop"
+              >
+                <Square size={14} fill="currentColor" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={isStreaming}
+                className="w-11 h-11 rounded-full bg-gradient-to-tr from-accent to-accent-hover text-white
+                         hover:shadow-lg hover:shadow-accent/30 hover:scale-105 active:scale-95 
+                         transition-all flex items-center justify-center
+                         disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+                title="Send"
+              >
+                <Send size={18} className="ml-0.5" />
+              </button>
+            )}
 
-          {/* Clear button */}
-          {messages.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowClearConfirm(true)}
-              disabled={isStreaming}
-              className="w-10 h-10 rounded-full border border-error/30 text-text-muted
-                       hover:text-error hover:border-error/50
-                       transition-colors flex items-center justify-center shrink-0 disabled:opacity-50"
-              title="Clear chat"
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
+            {messages.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(true)}
+                disabled={isStreaming}
+                className="w-11 h-11 rounded-full border border-border-subtle bg-surface/30 text-text-muted
+                         hover:text-error hover:border-error/30 hover:bg-error/5
+                         hover:scale-105 active:scale-95
+                         transition-all flex items-center justify-center disabled:opacity-50"
+                title="Clear chat"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
