@@ -65,7 +65,10 @@ from llama_index.llms.openai_like import OpenAILike
 
 from tools.search import SearchTool
 from tools.query_rewrite import QueryRewriter
-from prompts import CONDENSE_QUESTION_PROMPT, SEARCH_ANSWER_PROMPT
+from prompts import (
+    DEFAULT_SYSTEM_PROMPT,
+    SEARCH_RESULTS_SYSTEM_PROMPT,
+)
 
 
 class ChatEngine:
@@ -187,11 +190,7 @@ class ChatEngine:
         logger.info("======================================")
 
     def _default_system_prompt(self) -> str:
-        return (
-            "You are a helpful AI assistant with web search capabilities. "
-            "You provide concise, accurate answers. "
-            "When you need current information, you can search the web."
-        )
+        return DEFAULT_SYSTEM_PROMPT
 
     def _init_llms(self):
         """Initialize both primary and fast LLMs using OpenAI-compatible interface."""
@@ -298,7 +297,7 @@ class ChatEngine:
             search_context = await self._get_search_context(
                 standalone_query, search_params
             )
-            system_p = SEARCH_ANSWER_PROMPT.format(search_results=search_context)
+            system_p = SEARCH_RESULTS_SYSTEM_PROMPT.format(search_results=search_context)
 
         # Build messages
         messages = [ChatMessage(role=MessageRole.SYSTEM, content=system_p)]
@@ -343,7 +342,7 @@ class ChatEngine:
             search_context = await self._get_search_context(
                 standalone_query, search_params
             )
-            system_p = SEARCH_ANSWER_PROMPT.format(search_results=search_context)
+            system_p = SEARCH_RESULTS_SYSTEM_PROMPT.format(search_results=search_context)
             yield f"🔍 Search {self.search_tool.display_name} for: {standalone_query}...\n\n"
 
         # Build messages

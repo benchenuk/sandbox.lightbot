@@ -15,7 +15,7 @@
 14. [x] Clicking on tray icon show the drop down menu only. Clicking on "Show" to bring the window to the front. 
 15. [ ] Support "shift+enter" to new line.
 16. [ ] Chat window clears up when model selection and settings are changes. """Move the ChatWindow outside the conditional and use CSS to show/hide instead of mounting/unmounting:""
-17. [ ] Improve system prompts for query rewrite and assistant.time range; language; no mention search result; natural; notice user interaction; follow-up queries. 
+17. [x] Improve system prompts for query rewrite and assistant.time range; language; no mention search result; natural; notice user interaction; follow-up queries. 
 18. [ ] Increase max search results if model selected is not from lm_studio
 19. [ ] Clear chat confirmation message, add "do not show again" checkbox.
 20. [ ] After having saved new model, the drop-down options should be relaoded. 

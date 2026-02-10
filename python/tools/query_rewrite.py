@@ -2,7 +2,7 @@ from typing import List, Any, TypedDict
 import logging
 import re
 from llama_index.core.llms import ChatMessage
-from prompts import CONDENSE_QUESTION_PROMPT
+from prompts import REWRITE_QUERY_SYSTEM_PROMPT_TEMPLATE
 
 logger = logging.getLogger("lightbot.query_rewrite")
 
@@ -32,60 +32,32 @@ class QueryRewriter:
             return await self._rewrite_ddgs(message, history_str, llm)
 
     async def _rewrite_ddgs(self, message: str, history_str: str, llm: Any) -> RewriteResult:
-        """DDGS specific rewrite logic (placeholder for now)."""
-        prompt = CONDENSE_QUESTION_PROMPT.format(
-            chat_history=history_str, 
-            question=message
-        )
-        try:
-            response = await llm.acomplete(prompt)
-            standalone_query = response.text.strip()
-            return {
-                "query": standalone_query if standalone_query else message,
-                "params": {
-                    "time_limit": None,  # Placeholder
-                    "region": None       # Placeholder
-                }
-            }
-        except Exception as e:
-            logger.error(f"Error in DDGS rewrite: {e}")
-            return {"query": message, "params": {}}
+        """DDGS specific rewrite logic - uses same prompt but only extracts QUERY."""
+        return await self._rewrite_with_template(message, history_str, llm)
 
     async def _rewrite_searxng(self, message: str, history_str: str, llm: Any) -> RewriteResult:
-        """SearXNG specific rewrite logic with robust Key = Value output."""
-        
-        system_prompt = (
-            "You are a search query optimizer. "
-            "Your goal is to rewrite the user's request into a precise search query and extract relevant parameters. "
-            "Return the output in the following 'Key = Value' format:\n\n"
-            "QUERY = <optimized search query>\n"
-            "CATEGORIES = <comma-separated categories>\n"
-            "TIME_RANGE = <day|week|month|year|null>\n\n"
-            "Available categories: general, it, news, science, files, images, videos, music, map, social_media. "
-            "If none perform strongly, use 'general'.\n\n"
-            "Example:\n"
-            "QUERY = python async await tutorial\n"
-            "CATEGORIES = it\n"
-            "TIME_RANGE = year"
-        )
+        """SearXNG specific rewrite logic - extracts QUERY, CATEGORIES, and TIME_RANGE."""
+        result = await self._rewrite_with_template(message, history_str, llm)
+        # SearXNG uses the params, DDGS ignores them
+        return result
 
-        user_prompt = (
-            f"Conversation History:\n{history_str}\n\n"
-            f"Current Request: {message}\n\n"
-            "Provide the rewritten query and parameters."
+    async def _rewrite_with_template(self, message: str, history_str: str, llm: Any) -> RewriteResult:
+        """Shared rewrite logic using the unified prompt template."""
+        full_prompt = REWRITE_QUERY_SYSTEM_PROMPT_TEMPLATE.format(
+            chat_history=history_str,
+            question=message
         )
-        
-        full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
         try:
             response = await llm.acomplete(full_prompt)
             text = response.text.strip()
-            
+            logger.info(f"[DEBUG] Raw rewrite response:\n{text}")
+
             parsed = {}
             # Match lines like "KEY = VALUE" or "**KEY:** VALUE" or "KEY: VALUE"
             # Being flexible with separators (: or =) and optional markdown bolding
             pattern = re.compile(r'(?:\*\*|)?([A-Z_]+)(?:\*\*|)?\s*[:=]\s*(.*)', re.IGNORECASE)
-            
+
             for line in text.splitlines():
                 match = pattern.search(line)
                 if match:
@@ -101,15 +73,15 @@ class QueryRewriter:
             params = {}
             if "CATEGORIES" in parsed:
                 params["categories"] = parsed["CATEGORIES"]
-            
+
             if "TIME_RANGE" in parsed:
                 tr = parsed["TIME_RANGE"]
                 params["time_range"] = tr if tr.lower() != "null" else None
-            
+
             return {
                 "query": parsed.get("QUERY", message),
                 "params": params
             }
         except Exception as e:
-            logger.error(f"Error in SearXNG rewrite: {e}")
+            logger.error(f"Error in query rewrite: {e}")
             return {"query": message, "params": {}}
