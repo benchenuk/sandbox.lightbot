@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-import { Send, Square, Trash2, Globe } from "lucide-react";
+import { Send, Square, Trash2, Globe, ChevronUp, ChevronDown } from "lucide-react";
 import { useChat, type SearchMode } from "../hooks/useChat";
 import MessageItem from "./MessageItem";
 
@@ -10,10 +10,11 @@ function SearchToggle({ mode, onChange }: { mode: SearchMode; onChange: (mode: S
     <button
       type="button"
       onClick={() => onChange(isOn ? "off" : "on")}
-      className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-colors ${isOn
-        ? "bg-accent/10 text-accent border border-accent rounded-lg"
-        : "bg-surface text-text-muted border border-border-subtle hover:text-text-primary hover:bg-surface-hover rounded-lg"
+      className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors m-0 p-0 ${isOn
+        ? "bg-accent/10 text-accent border border-accent"
+        : "bg-surface text-text-muted border border-border-subtle hover:text-text-primary hover:bg-surface-hover"
         }`}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       title={isOn ? "Web search: On" : "Web search: Off"}
     >
       <Globe size={16} />
@@ -29,9 +30,10 @@ interface ChatWindowProps {
 export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
   const [searchMode, setSearchMode] = useState<SearchMode>("off");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const { messages, isStreaming, error, sendMessage, stopStreaming, clearMessages } =
     useChat({ apiPort, searchMode });
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Format hotkey for display
@@ -49,16 +51,27 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
 
   // Focus input on mount
   useEffect(() => {
-    inputRef.current?.focus();
+    textareaRef.current?.focus();
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const content = inputRef.current?.value.trim();
+    const content = textareaRef.current?.value.trim();
     if (!content || isStreaming) return;
 
     sendMessage(content);
-    inputRef.current!.value = "";
+    textareaRef.current!.value = "";
+    // Reset height if expanded
+    if (isExpanded) {
+      setIsExpanded(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
   };
 
   return (
@@ -92,35 +105,55 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
       )}
 
       {/* Input Area */}
-      <div className="border-t border-border-subtle bg-surface-secondary">
-        <form onSubmit={handleSubmit} className="p-3 flex items-center gap-2">
+      <div className="border-t border-border-subtle bg-surface-secondary p-3">
+        <form onSubmit={handleSubmit} className="flex items-end gap-2">
           {/* Search Toggle */}
           <SearchToggle mode={searchMode} onChange={setSearchMode} />
+
+          {/* Textarea with expand button */}
           <div className="flex-1 relative">
-            <input
-              ref={inputRef}
-              type="text"
+            <textarea
+              ref={textareaRef}
               placeholder="Type a message..."
               disabled={isStreaming}
-              className="w-full px-3 py-1.5 bg-surface border border-border-subtle rounded-md
+              onKeyDown={handleKeyDown}
+              className={`w-full px-3 bg-surface border border-border-subtle rounded-md
                        text-text-primary placeholder-text-disabled text-base
                        focus:outline-none focus:border-accent
                        disabled:opacity-50 disabled:cursor-not-allowed
-                       font-sans"
+                       resize-none leading-5 block transition-all duration-200 ease-in-out
+                       ${isExpanded ? "h-[120px] py-2" : "h-9 py-2"}`}
             />
+
+            {/* Expand/Collapse button */}
+            <button
+              type="button"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className={`absolute right-1 w-7 h-7 flex items-center justify-center rounded
+                       text-text-muted/60 hover:text-accent hover:bg-accent/10 transition-all
+                       ${isExpanded ? "top-1" : "top-1"}`}
+              title={isExpanded ? "Collapse" : "Expand"}
+            >
+              {isExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            </button>
+
+            {/* Streaming indicator */}
             {isStreaming && (
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-accent text-base cursor-blink font-mono">
+              <span
+                className="absolute right-9 top-1/2 -translate-y-1/2 text-accent text-base cursor-blink font-mono"
+              >
                 ▋
               </span>
             )}
           </div>
 
+          {/* Send/Stop button */}
           {isStreaming ? (
             <button
               type="button"
               onClick={stopStreaming}
-              className="w-9 h-9 shrink-0 rounded-full bg-error/10 border border-error/30 text-error
-                       hover:bg-error/20 transition-colors flex items-center justify-center"
+              className="w-9 h-9 rounded-full bg-error/10 border border-error/30 text-error
+                       hover:bg-error/20 transition-colors flex items-center justify-center shrink-0"
               title="Stop"
             >
               <Square size={12} fill="currentColor" />
@@ -129,8 +162,8 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
             <button
               type="submit"
               disabled={isStreaming}
-              className="w-9 h-9 shrink-0 rounded-full bg-accent text-white
-                       hover:bg-accent-hover transition-colors flex items-center justify-center
+              className="w-9 h-9 rounded-full bg-accent text-white
+                       hover:bg-accent-hover transition-colors flex items-center justify-center shrink-0
                        disabled:opacity-50 disabled:cursor-not-allowed"
               title="Send"
             >
@@ -138,14 +171,15 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
             </button>
           )}
 
+          {/* Clear button */}
           {messages.length > 0 && (
             <button
               type="button"
               onClick={() => setShowClearConfirm(true)}
               disabled={isStreaming}
-              className="w-9 h-9 shrink-0 rounded-full border border-error/30 text-text-muted
+              className="w-9 h-9 rounded-full border border-error/30 text-text-muted
                        hover:text-error hover:border-error/50
-                       transition-colors flex items-center justify-center disabled:opacity-50"
+                       transition-colors flex items-center justify-center shrink-0 disabled:opacity-50"
               title="Clear chat"
             >
               <Trash2 size={12} />
