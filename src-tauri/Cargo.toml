@@ -1,6 +1,6 @@
 [package]
 name = "lightbot"
-version = "1.1.7"
+version = "1.2.0"
 description = "Lightweight AI Chat Bot with Web Search"
 authors = ["LightBot Team"]
 license = "MIT"

@@ -2,6 +2,8 @@
 
 A lightweight, native MacOS desktop AI chat application with web search capabilities.
 
+<img src="screenshot.png" alt="screenshot" width="480"/>
+
 ## Features
 
 - 🤖 **AI Chat**: Support for OpenAI-compatible LLMs (local or remote)

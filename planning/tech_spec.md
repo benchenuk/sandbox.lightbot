@@ -204,13 +204,52 @@ TrayIconBuilder::new()
 }
 ```
 
+### Settings API Response (`GET /settings`)
+```json
+{
+  "models": [
+    {"name": "gpt-4", "url": "https://api.openai.com/v1", "key": "sk-..."},
+    {"name": "llama3.1", "url": "http://localhost:11434", "key": ""}
+  ],
+  "model_index": 0,
+  "fast_models": [
+    {"name": "gpt-3.5-turbo", "url": "https://api.openai.com/v1", "key": "sk-..."}
+  ],
+  "fast_model_index": 0,
+  "system_prompt": "You are a helpful AI assistant...",
+  "search_provider": "ddgs",
+  "search_url": "",
+  "hotkey": "Command+Shift+O"
+}
+```
+
 ## Configuration (Environment Variables)
 
-The Sidecar can be configured via `.env` to support Dual Models without UI changes:
-- `LLM_MODEL`: Primary model for reasoning/answering (e.g., `gpt-4o`, `llama3.1`).
-- `LLM_FAST_MODEL`: Fast model for query rewriting (e.g., `gpt-4o-mini`, `llama3.2`).
-- `LLM_BASE_URL`: OpenAI-compatible API base URL.
-- `LLM_API_KEY`: API key for the provider.
+The Sidecar is configured via `.env` file with JSON-based model configurations:
+
+### Model Configuration Format
+Models are stored as JSON arrays, allowing multiple model configurations per provider:
+
+```bash
+# Primary models for chat (JSON array)
+LLM_MODELS=[{"name":"gpt-4","url":"https://api.openai.com/v1","key":"sk-..."},{"name":"llama3.1","url":"http://localhost:11434","key":""}]
+LLM_MODEL_INDEX=0  # Index of active model
+
+# Fast models for query rewriting (JSON array)
+LLM_FAST_MODELS=[{"name":"gpt-3.5-turbo","url":"https://api.openai.com/v1","key":"sk-..."}]
+LLM_FAST_MODEL_INDEX=0
+
+# Other settings
+LLM_SYSTEM_PROMPT=You are a helpful AI assistant...
+SEARCH_PROVIDER=ddgs
+SEARCH_URL=
+GLOBAL_HOTKEY=Command+Shift+O
+```
+
+Each model config object contains:
+- `name`: Model identifier (e.g., "gpt-4", "llama3.1")
+- `url`: OpenAI-compatible API base URL
+- `key`: API key (can be empty for local models)
 
 
 ### IPC Commands (Rust)
@@ -221,6 +260,73 @@ The Sidecar can be configured via `.env` to support Dual Models without UI chang
 
 ---
 
+## LlamaIndex Framework
+
+LightBot uses **LlamaIndex** as the core AI framework for orchestrating chat interactions. While we use LlamaIndex's abstractions, the actual LLM communication is done through OpenAI-compatible APIs.
+
+### Core Components
+
+**1. ChatEngine (`python/engine.py`)**
+The central orchestrator that manages:
+- Ephemeral conversation memory (session-based)
+- LLM initialization and configuration
+- Streaming response handling
+- Search integration for web-enhanced responses
+
+**2. OpenAILike LLM Integration**
+Uses LlamaIndex's `OpenAILike` class for maximum compatibility:
+```python
+from llama_index.llms.openai_like import OpenAILike
+
+self.llm = OpenAILike(
+    model=self.model,           # e.g., "gpt-4", "llama3.1"
+    api_key=api_key,
+    api_base=self.base_url,     # e.g., "https://api.openai.com/v1"
+    is_chat_model=True,
+    timeout=60.0,
+)
+```
+
+**3. ChatMessage & Memory Management**
+LlamaIndex's `ChatMessage` and `MessageRole` abstractions provide:
+- Structured message format (USER/ASSISTANT/SYSTEM roles)
+- Conversation history tracking per session
+- Easy integration with LLM completions
+
+```python
+from llama_index.core.llms import ChatMessage, MessageRole
+
+# Storing messages
+self._memory[sid].append(
+    ChatMessage(role=MessageRole.USER, content=message)
+)
+
+# Streaming responses
+response = await self.llm.astream_chat(messages)
+async for token in response:
+    yield token.delta
+```
+
+**4. Search Integration**
+When web search is enabled, the flow is:
+1. User message received
+2. **Query Rewriting**: Fast LLM rewrites query using conversation history (via `QueryRewriter`)
+3. **Web Search**: `SearchTool` performs search with rewritten query
+4. **Context Injection**: Search results injected into system prompt
+5. **Response Generation**: Primary LLM generates answer with search context
+
+### Why LlamaIndex?
+
+| Feature | Benefit |
+|---------|---------|
+| **OpenAI-Compatible** | Works with any OpenAI-compatible API (OpenAI, Ollama, vLLM, etc.) |
+| **Streaming Support** | Native async streaming for real-time responses |
+| **Chat Abstractions** | Clean message/history management |
+| **Modular Design** | Easy to swap LLM providers or add new capabilities |
+| **Lightweight** | Only using core LLM features, not heavy indexing/RAG |
+
+---
+
 ## Implementation Status
 
 ### Phase 1-4: Core Development ✅ COMPLETE
@@ -228,6 +334,8 @@ The Sidecar can be configured via `.env` to support Dual Models without UI chang
 - [x] Rust Core (Tray, Hotkeys, Window Management)
 - [x] Python LlamaIndex Engine (OpenAI-compatible)
 - [x] Sidecar Integration bridge
+- [x] JSON-based Multi-Model Configuration
+- [x] Collapsible Model Editor UI
 
 ### Phase 5: Packaging & Distribution 🔄 IN PROGRESS
 - [x] PyInstaller Build Script
@@ -376,4 +484,4 @@ npm run tauri-dev
 
 ---
 
-*Last Updated: 2026-02-06*
+*Last Updated: 2026-02-09*

@@ -9,10 +9,11 @@
 - [x] Global hotkey, configurable, to bring up the chat window
 - [ ] Expandable and resizable input message box. With arrow at the end of the box, once clicked, the box pops taller (buttons remain the the bottom) and also becomes resizable. 
 - [x] Handle <think> reasoning output
-- [ ] Drop-up model selection
+- [x] Drop-up model selection
 - [ ] Voice dictation
 - [ ] Optional voice reply
 - [ ] Optional double 
 - [x] Better Logo
 - [ ] User input history. Navigate by arrow up and down key. 
-
+- [ ] Radio button to select model
+- [ ] Update the delete icon to "fire" or similar. 

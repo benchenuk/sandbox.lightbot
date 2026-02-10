@@ -53,7 +53,7 @@ class ChatResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    version: str = "1.1.7"
+    version: str = "1.2.0"
 
 
 @asynccontextmanager
@@ -73,7 +73,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 app = FastAPI(
     title="LightBot Sidecar",
     description="AI Chat and Web Search API for LightBot",
-    version="1.1.7",
+    version="1.2.0",
     lifespan=lifespan,
 )
 
