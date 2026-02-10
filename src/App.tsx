@@ -62,11 +62,46 @@ function App() {
     }
   };
 
-  // Apply font size class to document and save to localStorage
+  // Save font size to localStorage
   useEffect(() => {
-    document.documentElement.className = `font-size-${fontSize}`;
     localStorage.setItem("lightbot-font-size", fontSize);
   }, [fontSize]);
+
+  // Keyboard shortcuts for font size (only affect chat, not UI)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Cmd (Mac) or Ctrl (Windows/Linux)
+      if (!(e.metaKey || e.ctrlKey)) return;
+
+      const sizes: ("small" | "medium" | "large")[] = ["small", "medium", "large"];
+
+      switch (e.key) {
+        case "+":
+        case "=":
+          e.preventDefault();
+          setFontSize((current) => {
+            const currentIndex = sizes.indexOf(current);
+            return currentIndex < sizes.length - 1 ? sizes[currentIndex + 1] : current;
+          });
+          break;
+        case "-":
+        case "_":
+          e.preventDefault();
+          setFontSize((current) => {
+            const currentIndex = sizes.indexOf(current);
+            return currentIndex > 0 ? sizes[currentIndex - 1] : current;
+          });
+          break;
+        case "0":
+          e.preventDefault();
+          setFontSize("medium");
+          break;
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Sync pin state with actual window state
   useEffect(() => {
@@ -132,7 +167,7 @@ function App() {
               </div>
             </div>
           ) : (
-            <ChatWindow apiPort={sidecarPort} hotkey={hotkey} />
+            <ChatWindow apiPort={sidecarPort} hotkey={hotkey} fontSize={fontSize} />
           )}
         </div>
 

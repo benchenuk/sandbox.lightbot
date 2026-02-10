@@ -24,9 +24,10 @@ function SearchToggle({ mode, onChange }: { mode: SearchMode; onChange: (mode: S
 interface ChatWindowProps {
   apiPort: number | null;
   hotkey: string;
+  fontSize?: "small" | "medium" | "large";
 }
 
-export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
+export default function ChatWindow({ apiPort, hotkey, fontSize = "medium" }: ChatWindowProps) {
   const [searchMode, setSearchMode] = useState<SearchMode>("off");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -80,8 +81,8 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
 
   return (
     <div className="flex flex-col h-full bg-surface">
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Messages Area - Font size only affects chat content */}
+      <div className={`flex-1 overflow-y-auto font-size-${fontSize}`}>
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-text-muted">
             <div className="text-3xl mb-3 opacity-30 font-mono">💡</div>
