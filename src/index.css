@@ -252,3 +252,11 @@ select::-ms-expand {
 .text-lg {
   font-size: var(--font-lg);
 }
+
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

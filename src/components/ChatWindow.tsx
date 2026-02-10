@@ -10,14 +10,13 @@ function SearchToggle({ mode, onChange }: { mode: SearchMode; onChange: (mode: S
     <button
       type="button"
       onClick={() => onChange(isOn ? "off" : "on")}
-      className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors m-0 p-0 ${isOn
+      className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all ${isOn
         ? "bg-accent/10 text-accent border border-accent"
         : "bg-surface text-text-muted border border-border-subtle hover:text-text-primary hover:bg-surface-hover"
         }`}
-      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       title={isOn ? "Web search: On" : "Web search: Off"}
     >
-      <Globe size={16} />
+      <Globe size={18} />
     </button>
   );
 }
@@ -122,15 +121,16 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
                        focus:outline-none focus:border-accent
                        disabled:opacity-50 disabled:cursor-not-allowed
                        resize-none leading-5 block transition-all duration-200 ease-in-out
-                       ${isExpanded ? "h-[120px] py-2" : "h-9 py-2"}`}
+                       scrollbar-none
+                       ${isExpanded ? "h-48 py-2 overflow-y-auto" : "h-10 py-2.5 overflow-hidden"}`}
             />
 
             {/* Expand/Collapse button */}
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className={`absolute right-1 w-7 h-7 flex items-center justify-center rounded
-                       text-text-muted/60 hover:text-accent hover:bg-accent/10 transition-all
+              className={`absolute right-1 w-8 h-8 flex items-center justify-center rounded-full
+                       text-text-muted/60 hover:text-accent transition-all
                        ${isExpanded ? "top-1" : "top-1"}`}
               title={isExpanded ? "Collapse" : "Expand"}
             >
@@ -140,7 +140,7 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
             {/* Streaming indicator */}
             {isStreaming && (
               <span
-                className="absolute right-9 top-1/2 -translate-y-1/2 text-accent text-base cursor-blink font-mono"
+                className="absolute right-10 top-1/2 -translate-y-1/2 text-accent text-base cursor-blink font-mono"
               >
                 ▋
               </span>
@@ -152,22 +152,22 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
             <button
               type="button"
               onClick={stopStreaming}
-              className="w-9 h-9 rounded-full bg-error/10 border border-error/30 text-error
+              className="w-10 h-10 rounded-full bg-error/10 border border-error/30 text-error
                        hover:bg-error/20 transition-colors flex items-center justify-center shrink-0"
               title="Stop"
             >
-              <Square size={12} fill="currentColor" />
+              <Square size={14} fill="currentColor" />
             </button>
           ) : (
             <button
               type="submit"
               disabled={isStreaming}
-              className="w-9 h-9 rounded-full bg-accent text-white
+              className="w-10 h-10 rounded-full bg-accent text-white
                        hover:bg-accent-hover transition-colors flex items-center justify-center shrink-0
                        disabled:opacity-50 disabled:cursor-not-allowed"
               title="Send"
             >
-              <Send size={12} className="ml-0.5" />
+              <Send size={18} className="ml-0.5" />
             </button>
           )}
 
@@ -177,12 +177,12 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
               type="button"
               onClick={() => setShowClearConfirm(true)}
               disabled={isStreaming}
-              className="w-9 h-9 rounded-full border border-error/30 text-text-muted
+              className="w-10 h-10 rounded-full border border-error/30 text-text-muted
                        hover:text-error hover:border-error/50
                        transition-colors flex items-center justify-center shrink-0 disabled:opacity-50"
               title="Clear chat"
             >
-              <Trash2 size={12} />
+              <Trash2 size={16} />
             </button>
           )}
         </form>
