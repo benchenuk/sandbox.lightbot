@@ -1,0 +1,101 @@
+# LightBot Configuration File
+# This file uses TOML format: https://toml.io/en/
+# Restart the application after making changes
+
+# =============================================================================
+# MODELS CONFIGURATION
+# =============================================================================
+
+[models]
+# Index (0-based) of the currently selected model from the list below
+selected_index = 0
+
+# Primary models for chat responses
+# Add as many models as you need - each model has name, url, and key
+[[models.list]]
+name = "gpt-4"
+url = "https://api.openai.com/v1"
+key = "sk-your-openai-api-key-here"
+
+[[models.list]]
+name = "llama3.1"
+url = "http://localhost:11434"
+key = ""  # Empty for local models without authentication
+
+[[models.list]]
+name = "claude-3-5-sonnet"
+url = "https://api.anthropic.com/v1"
+key = "sk-ant-api03-your-anthropic-key"
+
+# =============================================================================
+# FAST MODELS CONFIGURATION
+# =============================================================================
+
+[fast_models]
+# Index (0-based) of the currently selected fast model
+selected_index = 0
+
+# Fast models for query rewriting and lightweight tasks
+# These should be faster/cheaper models since they're used for background tasks
+[[fast_models.list]]
+name = "gpt-3.5-turbo"
+url = "https://api.openai.com/v1"
+key = "sk-your-openai-api-key-here"
+
+[[fast_models.list]]
+name = "llama3.2"
+url = "http://localhost:11434"
+key = ""  # Empty for local models
+
+# =============================================================================
+# GENERAL SETTINGS
+# =============================================================================
+
+[settings]
+# System prompt sent to the LLM with every request
+system_prompt = """You are a helpful AI assistant with web search capabilities. 
+You provide concise, accurate answers. 
+When you need current information, you can search the web."""
+
+# Search provider for web search feature
+# Options: "ddgs" (DuckDuckGo, no API key needed) or "searxng" (self-hosted)
+search_provider = "ddgs"
+
+# SearXNG instance URL (only used if search_provider = "searxng")
+# Leave empty if using ddgs
+search_url = ""
+
+# Global hotkey to toggle the application window
+# Format examples: "Command+Shift+O", "Ctrl+Alt+Space", "Cmd+Shift+L"
+# Requires application restart to take effect
+hotkey = "Command+Shift+O"
+
+# =============================================================================
+# CONFIGURATION NOTES
+# =============================================================================
+#
+# 1. Model Configuration:
+#    - Each model needs: name (model identifier), url (API base URL), key (API key)
+#    - For local models (Ollama, etc.), leave key as empty string ""
+#    - selected_index points to which model is currently active (0 = first)
+#
+# 2. Multiple Models:
+#    - Add multiple [[models.list]] or [[fast_models.list]] entries
+#    - Switch between models in the UI dropdown or Settings panel
+#
+# 3. Fast Models:
+#    - Used for query rewriting when web search is enabled
+#    - Should be faster/cheaper than primary models
+#    - Can use the same provider as primary models or different
+#
+# 4. API Compatibility:
+#    - LightBot uses OpenAI-compatible APIs
+#    - Works with: OpenAI, Ollama, vLLM, LiteLLM, and other compatible providers
+#    - URL format: https://api.example.com/v1 (must include version path)
+#
+# 5. Security:
+#    - Keep your API keys secure and never commit them to version control
+#    - For development, use project root config.toml
+#    - For production, config is stored in ~/.lightbot/config.toml
+#
+# =============================================================================

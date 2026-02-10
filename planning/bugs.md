@@ -19,4 +19,4 @@
 18. [ ] Increase max search results if model selected is not from lm_studio
 19. [ ] Clear chat confirmation message, add "do not show again" checkbox.
 20. [ ] After having saved new model, the drop-down options should be relaoded. 
-21. [ ] Migrate .env properties file to .toml format. 
+21. [x] Migrate .env properties file to .toml format. 

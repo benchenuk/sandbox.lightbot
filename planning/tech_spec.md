@@ -98,6 +98,8 @@ LightBot uses a "Sidecar" architecture where a compiled Python binary runs as a 
 | LLM Support | OpenAI-compatible API | - | ✅ Ready |
 | Search | ddgs | 6.3+ | ✅ Ready |
 | Bundling | PyInstaller | 6.11+ | ✅ Ready |
+| Config Format | TOML | 1.0+ | ✅ Ready |
+| TOML Parser | tomli/tomli-w | 2.0+/1.0+ | ✅ Ready |
 
 ---
 
@@ -223,33 +225,65 @@ TrayIconBuilder::new()
 }
 ```
 
-## Configuration (Environment Variables)
+## Configuration (TOML Format)
 
-The Sidecar is configured via `.env` file with JSON-based model configurations:
+LightBot uses **TOML** format for configuration. This provides better readability, native comments support, and easier editing compared to JSON.
+
+### Configuration File Location
+
+- **Development**: `config.toml` in project root
+- **Production**: `~/.lightbot/config.toml`
 
 ### Model Configuration Format
-Models are stored as JSON arrays, allowing multiple model configurations per provider:
 
-```bash
-# Primary models for chat (JSON array)
-LLM_MODELS=[{"name":"gpt-4","url":"https://api.openai.com/v1","key":"sk-..."},{"name":"llama3.1","url":"http://localhost:11434","key":""}]
-LLM_MODEL_INDEX=0  # Index of active model
+```toml
+[models]
+selected_index = 0
 
-# Fast models for query rewriting (JSON array)
-LLM_FAST_MODELS=[{"name":"gpt-3.5-turbo","url":"https://api.openai.com/v1","key":"sk-..."}]
-LLM_FAST_MODEL_INDEX=0
+[[models.list]]
+name = "gpt-4"
+url = "https://api.openai.com/v1"
+key = "sk-your-api-key"
 
-# Other settings
-LLM_SYSTEM_PROMPT=You are a helpful AI assistant...
-SEARCH_PROVIDER=ddgs
-SEARCH_URL=
-GLOBAL_HOTKEY=Command+Shift+O
+[[models.list]]
+name = "llama3.1"
+url = "http://localhost:11434"
+key = ""
+
+[fast_models]
+selected_index = 0
+
+[[fast_models.list]]
+name = "gpt-3.5-turbo"
+url = "https://api.openai.com/v1"
+key = "sk-your-api-key"
+
+[settings]
+system_prompt = "You are a helpful AI assistant..."
+search_provider = "ddgs"
+search_url = ""
+hotkey = "Command+Shift+O"
 ```
 
 Each model config object contains:
 - `name`: Model identifier (e.g., "gpt-4", "llama3.1")
 - `url`: OpenAI-compatible API base URL
 - `key`: API key (can be empty for local models)
+
+### Migration from .env (JSON)
+
+If upgrading from a previous version that used `.env` files:
+
+```bash
+# Run the migration script
+python scripts/migrate-config.py
+```
+
+This will:
+1. Read your existing `.env` configuration
+2. Convert to TOML format
+3. Create `config.toml`
+4. Backup `.env` to `.env.backup`
 
 
 ### IPC Commands (Rust)
@@ -334,8 +368,9 @@ When web search is enabled, the flow is:
 - [x] Rust Core (Tray, Hotkeys, Window Management)
 - [x] Python LlamaIndex Engine (OpenAI-compatible)
 - [x] Sidecar Integration bridge
-- [x] JSON-based Multi-Model Configuration
+- [x] TOML-based Multi-Model Configuration
 - [x] Collapsible Model Editor UI
+- [x] Migration script (.env → TOML)
 
 ### Phase 5: Packaging & Distribution 🔄 IN PROGRESS
 - [x] PyInstaller Build Script
@@ -484,4 +519,4 @@ npm run tauri-dev
 
 ---
 
-*Last Updated: 2026-02-09*
+*Last Updated: 2026-02-10*

@@ -1,64 +1,33 @@
-import json
 import logging
 import os
 from collections import defaultdict
 from pathlib import Path
 from typing import AsyncGenerator, List
-from dotenv import load_dotenv, set_key
+
+import tomli
+import tomli_w
 
 # Configure logging
 logger = logging.getLogger("lightbot.engine")
 
 # Config paths
 PROJECT_ROOT = Path(__file__).parent.parent  # python/ -> project root
-DEV_ENV_FILE = PROJECT_ROOT / ".env"
+DEV_CONFIG_FILE = PROJECT_ROOT / "config.toml"
 
 USER_CONFIG_DIR = Path.home() / ".lightbot"
-USER_ENV_FILE = USER_CONFIG_DIR / ".env"
+USER_CONFIG_FILE = USER_CONFIG_DIR / "config.toml"
 
-# Determine which env file to use
-# If project root .env exists (development), use it exclusively
-# Otherwise use user home .env (production/bundled app)
-if DEV_ENV_FILE.exists():
-    ENV_FILE_PATH = DEV_ENV_FILE
-    print(f"[LightBot] Development mode: using {ENV_FILE_PATH}")
+# Determine which config file to use
+# If project root config.toml exists (development), use it exclusively
+# Otherwise use user home config.toml (production/bundled app)
+if DEV_CONFIG_FILE.exists():
+    CONFIG_FILE_PATH = DEV_CONFIG_FILE
+    print(f"[LightBot] Development mode: using {CONFIG_FILE_PATH}")
 else:
     # Ensure user config directory exists
     USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Create default .env if it doesn't exist
-    if not USER_ENV_FILE.exists():
-        default_content = """# LightBot Configuration
-# Restart app after editing this file
-
-# LLM Configuration
-# JSON array of model configurations: [{"name": "...", "url": "...", "key": "..."}]
-LLM_MODELS=[]
-# Index (0-based) of the currently selected model
-LLM_MODEL_INDEX=0
-# JSON array of fast model configurations for query rewriting
-LLM_FAST_MODELS=[]
-# Index (0-based) of the currently selected fast model
-LLM_FAST_MODEL_INDEX=0
-LLM_SYSTEM_PROMPT=You are a helpful AI assistant with web search capabilities.
-
-# Search Configuration
-SEARCH_PROVIDER=ddgs
-SEARCH_URL=
-
-# UI Configuration
-# Hotkey format: Command+Shift+O, Ctrl+Alt+Space, etc.
-# Restart app to apply changes
-GLOBAL_HOTKEY=Command+Shift+O
-"""
-        USER_ENV_FILE.write_text(default_content)
-        print(f"[LightBot] Created default config at {USER_ENV_FILE}")
-
-    ENV_FILE_PATH = USER_ENV_FILE
-    print(f"[LightBot] Production mode: using {ENV_FILE_PATH}")
-
-# Load the determined env file
-load_dotenv(ENV_FILE_PATH, override=True)
+    CONFIG_FILE_PATH = USER_CONFIG_FILE
+    print(f"[LightBot] Production mode: using {CONFIG_FILE_PATH}")
 
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai_like import OpenAILike
@@ -71,27 +40,85 @@ from prompts import (
 )
 
 
+class ConfigManager:
+    """Manages TOML configuration file."""
+
+    def __init__(self, config_path: Path):
+        self.config_path = config_path
+        self._ensure_config_exists()
+
+    def _ensure_config_exists(self):
+        """Create default config if it doesn't exist."""
+        if not self.config_path.exists():
+            default_config = {
+                "models": {
+                    "selected_index": 0,
+                    "list": [],
+                },
+                "fast_models": {
+                    "selected_index": 0,
+                    "list": [],
+                },
+                "settings": {
+                    "system_prompt": DEFAULT_SYSTEM_PROMPT,
+                    "search_provider": "ddgs",
+                    "search_url": "",
+                    "hotkey": "Command+Shift+O",
+                },
+            }
+            self.save(default_config)
+            print(f"[LightBot] Created default config at {self.config_path}")
+
+    def load(self) -> dict:
+        """Load configuration from TOML file."""
+        try:
+            with open(self.config_path, "rb") as f:
+                return tomli.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load config: {e}")
+            # Return default config on error
+            return {
+                "models": {"selected_index": 0, "list": []},
+                "fast_models": {"selected_index": 0, "list": []},
+                "settings": {
+                    "system_prompt": DEFAULT_SYSTEM_PROMPT,
+                    "search_provider": "ddgs",
+                    "search_url": "",
+                    "hotkey": "Command+Shift+O",
+                },
+            }
+
+    def save(self, config: dict):
+        """Save configuration to TOML file."""
+        try:
+            with open(self.config_path, "wb") as f:
+                tomli_w.dump(config, f)
+        except Exception as e:
+            logger.error(f"Failed to save config: {e}")
+
+
 class ChatEngine:
     """Main chat engine with ephemeral memory."""
 
     def __init__(self):
-        # Reload env file to pick up any external changes
-        load_dotenv(ENV_FILE_PATH, override=True)
+        # Initialize config manager
+        self.config_manager = ConfigManager(CONFIG_FILE_PATH)
 
-        # Load model configurations from JSON arrays
-        self.models: list[dict] = self._load_models_config("LLM_MODELS")
-        self.fast_models: list[dict] = self._load_models_config("LLM_FAST_MODELS")
+        # Load configuration
+        config = self.config_manager.load()
 
-        # Load selected model indices
-        try:
-            self.model_index: int = int(os.getenv("LLM_MODEL_INDEX", "0"))
-        except ValueError:
-            self.model_index = 0
+        # Load model configurations
+        models_config = config.get("models", {})
+        self.models: list[dict] = [
+            m for m in models_config.get("list", []) if m.get("name", "").strip()
+        ]
+        self.model_index: int = models_config.get("selected_index", 0)
 
-        try:
-            self.fast_model_index: int = int(os.getenv("LLM_FAST_MODEL_INDEX", "0"))
-        except ValueError:
-            self.fast_model_index = 0
+        fast_models_config = config.get("fast_models", {})
+        self.fast_models: list[dict] = [
+            m for m in fast_models_config.get("list", []) if m.get("name", "").strip()
+        ]
+        self.fast_model_index: int = fast_models_config.get("selected_index", 0)
 
         # Ensure indices are valid
         if self.model_index >= len(self.models):
@@ -127,23 +154,23 @@ class ChatEngine:
             else ""
         )
 
-        self.system_prompt: str = os.getenv(
-            "LLM_SYSTEM_PROMPT", self._default_system_prompt()
+        # Settings
+        settings = config.get("settings", {})
+        self.system_prompt: str = settings.get(
+            "system_prompt", self._default_system_prompt()
         )
-
-        # Search settings
-        self.search_provider: str = os.getenv("SEARCH_PROVIDER", "ddgs")
-        self.search_url: str = os.getenv("SEARCH_URL", "")
+        self.search_provider: str = settings.get("search_provider", "ddgs")
+        self.search_url: str = settings.get("search_url", "")
 
         # Ephemeral memory: session_id -> list of messages
         self._memory: dict[str, list[ChatMessage]] = defaultdict(list)
 
-        # Search tool - initialized with env settings
+        # Search tool - initialized with settings
         self.search_tool = SearchTool(
             provider=self.search_provider, base_url=self.search_url or None
         )
 
-        # Query rewriter - initialized with env settings
+        # Query rewriter - initialized with settings
         self.query_rewriter = QueryRewriter(provider=self.search_provider)
 
         # Initialize LLMs
@@ -151,20 +178,6 @@ class ChatEngine:
         self.fast_llm = None
         self._log_settings()
         self._init_llms()
-
-    def _load_models_config(self, env_var: str) -> list[dict]:
-        """Load model configurations from JSON environment variable."""
-        json_str = os.getenv(env_var, "")
-        if not json_str:
-            return []
-        try:
-            models = json.loads(json_str)
-            if isinstance(models, list):
-                # Filter out empty configs
-                return [m for m in models if m.get("name", "").strip()]
-        except json.JSONDecodeError:
-            logger.warning(f"Failed to parse {env_var} as JSON")
-        return []
 
     def _log_settings(self):
         """Log current configuration settings (masking API key)."""
@@ -271,7 +284,6 @@ class ChatEngine:
         context = (
             "\n".join(context_lines) if context_lines else "No valid search results."
         )
-        # logger.info(f"[DEBUG] Search context sent to LLM:\n{context}")
         return context
 
     async def chat(
@@ -297,7 +309,9 @@ class ChatEngine:
             search_context = await self._get_search_context(
                 standalone_query, search_params
             )
-            system_p = SEARCH_RESULTS_SYSTEM_PROMPT.format(search_results=search_context)
+            system_p = SEARCH_RESULTS_SYSTEM_PROMPT.format(
+                search_results=search_context
+            )
 
         # Build messages
         messages = [ChatMessage(role=MessageRole.SYSTEM, content=system_p)]
@@ -342,7 +356,9 @@ class ChatEngine:
             search_context = await self._get_search_context(
                 standalone_query, search_params
             )
-            system_p = SEARCH_RESULTS_SYSTEM_PROMPT.format(search_results=search_context)
+            system_p = SEARCH_RESULTS_SYSTEM_PROMPT.format(
+                search_results=search_context
+            )
             yield f"🔍 Search {self.search_tool.display_name} for: {standalone_query}...\n\n"
 
         # Build messages
@@ -375,31 +391,38 @@ class ChatEngine:
     def get_settings(self) -> dict:
         """Get current engine settings."""
         # Reload to pick up any external changes
-        load_dotenv(ENV_FILE_PATH, override=True)
-        # Reload model configs to pick up external changes
-        self.models = self._load_models_config("LLM_MODELS")
-        self.fast_models = self._load_models_config("LLM_FAST_MODELS")
+        config = self.config_manager.load()
+
+        models_config = config.get("models", {})
+        fast_models_config = config.get("fast_models", {})
+        settings = config.get("settings", {})
+
         return {
-            "models": self.models,
-            "model_index": self.model_index,
-            "fast_models": self.fast_models,
-            "fast_model_index": self.fast_model_index,
-            "system_prompt": self.system_prompt,
-            "search_provider": self.search_provider,
-            "search_url": self.search_url,
-            "hotkey": os.getenv("GLOBAL_HOTKEY", "Command+Shift+O"),
+            "models": models_config.get("list", []),
+            "model_index": models_config.get("selected_index", 0),
+            "fast_models": fast_models_config.get("list", []),
+            "fast_model_index": fast_models_config.get("selected_index", 0),
+            "system_prompt": settings.get(
+                "system_prompt", self._default_system_prompt()
+            ),
+            "search_provider": settings.get("search_provider", "ddgs"),
+            "search_url": settings.get("search_url", ""),
+            "hotkey": settings.get("hotkey", "Command+Shift+O"),
         }
 
     def update_settings(self, settings: dict):
-        """Update engine settings, save to .env file, and reinitialize LLMs if needed."""
+        """Update engine settings, save to TOML file, and reinitialize LLMs if needed."""
+        config = self.config_manager.load()
         reinitialize = False
 
         if "models" in settings:
-            self.models = [m for m in settings["models"] if m.get("name", "").strip()]
-            set_key(ENV_FILE_PATH, "LLM_MODELS", json.dumps(self.models))
+            models = [m for m in settings["models"] if m.get("name", "").strip()]
+            config["models"]["list"] = models
+            self.models = models
             # Ensure model_index stays valid
             if self.model_index >= len(self.models):
                 self.model_index = 0
+                config["models"]["selected_index"] = 0
             if self.models:
                 self.model = self.models[self.model_index].get("name", "")
                 self.base_url = self.models[self.model_index].get("url", "")
@@ -410,20 +433,22 @@ class ChatEngine:
             new_index = settings["model_index"]
             if isinstance(new_index, int) and 0 <= new_index < len(self.models):
                 self.model_index = new_index
-                set_key(ENV_FILE_PATH, "LLM_MODEL_INDEX", str(self.model_index))
+                config["models"]["selected_index"] = new_index
                 self.model = self.models[self.model_index].get("name", "")
                 self.base_url = self.models[self.model_index].get("url", "")
                 self.api_key = self.models[self.model_index].get("key", "").strip()
                 reinitialize = True
 
         if "fast_models" in settings:
-            self.fast_models = [
+            fast_models = [
                 m for m in settings["fast_models"] if m.get("name", "").strip()
             ]
-            set_key(ENV_FILE_PATH, "LLM_FAST_MODELS", json.dumps(self.fast_models))
+            config["fast_models"]["list"] = fast_models
+            self.fast_models = fast_models
             # Ensure fast_model_index stays valid
             if self.fast_model_index >= len(self.fast_models):
                 self.fast_model_index = 0
+                config["fast_models"]["selected_index"] = 0
             if self.fast_models:
                 self.fast_model = self.fast_models[self.fast_model_index].get(
                     "name", ""
@@ -440,9 +465,7 @@ class ChatEngine:
             new_index = settings["fast_model_index"]
             if isinstance(new_index, int) and 0 <= new_index < len(self.fast_models):
                 self.fast_model_index = new_index
-                set_key(
-                    ENV_FILE_PATH, "LLM_FAST_MODEL_INDEX", str(self.fast_model_index)
-                )
+                config["fast_models"]["selected_index"] = new_index
                 self.fast_model = self.fast_models[self.fast_model_index].get(
                     "name", ""
                 )
@@ -456,23 +479,25 @@ class ChatEngine:
 
         if "system_prompt" in settings:
             self.system_prompt = settings["system_prompt"]
-            set_key(ENV_FILE_PATH, "LLM_SYSTEM_PROMPT", self.system_prompt)
+            config["settings"]["system_prompt"] = settings["system_prompt"]
 
         if "search_provider" in settings:
             self.search_provider = settings["search_provider"]
-            set_key(ENV_FILE_PATH, "SEARCH_PROVIDER", self.search_provider)
+            config["settings"]["search_provider"] = settings["search_provider"]
             self.search_tool.update_settings(provider=settings["search_provider"])
             self.query_rewriter.provider = settings["search_provider"]
 
         if "search_url" in settings:
             self.search_url = settings["search_url"]
-            set_key(ENV_FILE_PATH, "SEARCH_URL", self.search_url)
+            config["settings"]["search_url"] = settings["search_url"]
             self.search_tool.update_settings(base_url=settings["search_url"])
 
         if "hotkey" in settings:
-            set_key(ENV_FILE_PATH, "GLOBAL_HOTKEY", settings["hotkey"])
+            config["settings"]["hotkey"] = settings["hotkey"]
 
-        logger.info(f"Settings saved to {ENV_FILE_PATH}")
+        # Save config
+        self.config_manager.save(config)
+        logger.info(f"Settings saved to {self.config_manager.config_path}")
 
         if reinitialize:
             self._init_llms()
