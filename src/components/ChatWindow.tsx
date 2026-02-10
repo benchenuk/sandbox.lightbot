@@ -67,9 +67,14 @@ export default function ChatWindow({ apiPort, hotkey }: ChatWindowProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
+    if (e.key === "Enter") {
+      if (e.shiftKey) {
+        // Allow default newline behavior but ensure it's expanded
+        setIsExpanded(true);
+      } else {
+        e.preventDefault();
+        handleSubmit(e);
+      }
     }
   };
 
