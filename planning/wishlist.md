@@ -18,3 +18,4 @@
 - [ ] Radio button to select model
 - [ ] Update the delete icon to "fire" or similar. 
 - [x] Font size increase/decrase/reset.
+- [ ] Keyboard control support 
