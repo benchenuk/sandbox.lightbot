@@ -36,6 +36,7 @@ CATEGORIES = <comma-separated categories (e.g., general, it, news)>
 TIME_RANGE = <day|week|month|year|null>
 
 Available categories: general, it, news, science, files, images, videos, music, map, social_media.
+(Use "it", a.k.a "IT", for technical/software topics, e.g., "tutorial," "code," "debug")
 Time range is important to narrow time scope of the search, improves search accuracy.  
 
 Rules:
