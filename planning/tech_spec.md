@@ -517,6 +517,31 @@ npm run tauri-dev
 
 **Historical Note**: Earlier versions attempted file-based logging with rotation (5MB x 3 files) but this was abandoned in v1.1.6. The issue was root-caused to `child.try_wait()` interfering with process spawning, not the logging itself, but the simplification was kept.
 
+### PyInstaller Bundling Issue
+
+**Problem**: When adding TOML configuration support, the bundled app failed to start because PyInstaller wasn't including the new Python modules (`engine.py`, `tools/*.py`).
+
+**Root Cause**: PyInstaller's auto-detection only works for imports at the top level of the main script. When we split code into separate modules and imported them, PyInstaller didn't automatically bundle them.
+
+**Symptoms**:
+- App launches but shows "Initializing LightBot..." forever
+- No error messages in the UI
+- `/health` endpoint returns 200 but chat doesn't work
+- Manual testing of sidecar shows: `ModuleNotFoundError: No module named 'engine'`
+
+**Solution**:
+1. Created `lightbot.spec` PyInstaller specification file
+2. Explicitly added Python files to `datas` in the spec
+3. Added `hiddenimports` for all custom modules
+4. Fixed path logic to handle PyInstaller's `_MEIPASS` temp directory
+
+**Key Learning**: When adding new Python modules to the sidecar, always:
+- Add them to `lightbot.spec` `datas` and `hiddenimports`
+- Test the bundled binary with `./src-tauri/bin/python-sidecar --help`
+- Verify all `.py` files are present in the bundle temp directory
+
+**Spec File Location**: `lightbot.spec`
+
 ---
 
 *Last Updated: 2026-02-10*

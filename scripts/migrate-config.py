@@ -78,20 +78,51 @@ def load_env_config(env_path: Path) -> dict:
     return config
 
 
+def write_toml(data: dict, file_path: Path) -> None:
+    """Write a simple TOML file. Only supports basic nested dicts and lists."""
+    lines = []
+
+    def write_value(val, indent=0):
+        if isinstance(val, str):
+            return f'"{val}"'
+        elif isinstance(val, int):
+            return str(val)
+        elif isinstance(val, bool):
+            return "true" if val else "false"
+        elif isinstance(val, list):
+            return "[" + ", ".join(write_value(v) for v in val) + "]"
+        return str(val)
+
+    def write_table(table, table_name=""):
+        for key, val in table.items():
+            if isinstance(val, dict):
+                # Nested table
+                full_name = f"{table_name}.{key}" if table_name else key
+                lines.append(f"\n[{full_name}]")
+                write_table(val, full_name)
+            elif isinstance(val, list) and val and isinstance(val[0], dict):
+                # Array of tables
+                full_name = f"{table_name}.{key}" if table_name else key
+                for item in val:
+                    lines.append(f"\n[[{full_name}]]")
+                    for k, v in item.items():
+                        lines.append(f"{k} = {write_value(v)}")
+            else:
+                lines.append(f"{key} = {write_value(val)}")
+
+    write_table(data)
+
+    with open(file_path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
+
 def save_toml_config(config: dict, toml_path: Path):
     """Save configuration to TOML file."""
-    try:
-        import tomli_w
-    except ImportError:
-        print("Error: tomli-w not installed. Run: pip install tomli-w")
-        sys.exit(1)
-
     # Ensure directory exists
     toml_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Write TOML
-    with open(toml_path, "wb") as f:
-        tomli_w.dump(config, f)
+    write_toml(config, toml_path)
 
     print(f"✓ Created TOML config: {toml_path}")
 

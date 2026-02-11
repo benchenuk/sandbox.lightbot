@@ -10,35 +10,58 @@ import logging
 import os
 import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncGenerator
 
 from dotenv import load_dotenv
 
-# Add current directory to sys.path for local imports
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Handle PyInstaller bundled data - add bundle directory to path
+if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    sys.path.insert(0, sys._MEIPASS)
 
 # Load environment variables from .env file
 # Try both the current directory and the parent directory
 load_dotenv()  # In current dir (python/.env)
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")) # In project root
+load_dotenv(
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+)  # In project root
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from engine import ChatEngine
+# Import engine with error handling
+try:
+    from engine import ChatEngine
 
-# Configure logging
+    print("[SERVER] ChatEngine imported successfully", flush=True)
+except Exception as e:
+    print(f"[SERVER] FAILED to import ChatEngine: {e}", flush=True)
+    import traceback
+
+    print(traceback.format_exc(), flush=True)
+    raise
+
+# Configure logging - both to stdout and file
+log_dir = Path.home() / ".lightbot"
+log_dir.mkdir(parents=True, exist_ok=True)
+log_file = log_dir / "lightbot.log"
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    stream=sys.stdout,
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(log_file, mode="a"),
+    ],
 )
 logger = logging.getLogger("lightbot.server")
+logger.info(f"Logging to: {log_file}")
 
 # Global chat engine instance
 chat_engine: ChatEngine | None = None
+startup_error: str | None = None
 
 
 class ChatRequest(BaseModel):
@@ -53,19 +76,35 @@ class ChatResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    version: str = "1.2.0"
+    version: str = "1.3.0"
+    error: str | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """Manage application lifecycle."""
-    global chat_engine
+    global chat_engine, startup_error
     # Startup
+    print("[SERVER] Lifespan starting...", flush=True)
     logger.info("Starting LightBot Python Sidecar...")
-    chat_engine = ChatEngine()
+    try:
+        print("[SERVER] About to create ChatEngine...", flush=True)
+        chat_engine = ChatEngine()
+        print("[SERVER] ChatEngine created successfully", flush=True)
+        logger.info("ChatEngine initialized successfully")
+    except Exception as e:
+        startup_error = str(e)
+        print(f"[SERVER] ERROR: Failed to initialize ChatEngine: {e}", flush=True)
+        logger.error(f"Failed to initialize ChatEngine: {e}")
+        import traceback
+
+        tb = traceback.format_exc()
+        print(tb, flush=True)
+        logger.error(tb)
     yield
     # Shutdown
     logger.info("Shutting down LightBot Python Sidecar...")
+    print("[SERVER] Shutting down...", flush=True)
     if chat_engine:
         chat_engine.clear_memory()
 
@@ -73,7 +112,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 app = FastAPI(
     title="LightBot Sidecar",
     description="AI Chat and Web Search API for LightBot",
-    version="1.2.0",
+    version="1.3.0",
     lifespan=lifespan,
 )
 
@@ -90,6 +129,11 @@ app.add_middleware(
 @app.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
     """Health check endpoint."""
+    global startup_error
+    if startup_error:
+        return HealthResponse(status="error", error=startup_error)
+    if not chat_engine:
+        return HealthResponse(status="initializing")
     return HealthResponse(status="healthy")
 
 
@@ -99,8 +143,10 @@ async def chat(request: ChatRequest) -> ChatResponse:
     global chat_engine
     if not chat_engine:
         return ChatResponse(response="Error: Chat engine not initialized")
-    
-    response = await chat_engine.chat(request.message, request.session_id, request.search_mode)
+
+    response = await chat_engine.chat(
+        request.message, request.session_id, request.search_mode
+    )
     return ChatResponse(response=response)
 
 
@@ -110,14 +156,16 @@ async def chat_stream(request: ChatRequest) -> StreamingResponse:
     global chat_engine
     if not chat_engine:
         return StreamingResponse(
-            iter(["Error: Chat engine not initialized"]),
-            media_type="text/plain"
+            iter(["Error: Chat engine not initialized"]), media_type="text/plain"
         )
-    
+
     async def generate() -> AsyncGenerator[str, None]:
-        async for chunk in chat_engine.chat_stream(request.message, request.session_id, request.search_mode):
-            yield chunk
-    
+        if chat_engine:
+            async for chunk in chat_engine.chat_stream(
+                request.message, request.session_id, request.search_mode
+            ):
+                yield chunk
+
     return StreamingResponse(generate(), media_type="text/plain")
 
 
@@ -154,8 +202,9 @@ def main():
     parser.add_argument("--port", type=int, default=8080, help="Port to run on")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to bind to")
     args = parser.parse_args()
-    
+
     import uvicorn
+
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
 
 

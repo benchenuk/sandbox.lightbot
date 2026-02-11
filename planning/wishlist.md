@@ -17,4 +17,4 @@
 - [ ] User input history. Navigate by arrow up and down key. 
 - [ ] Radio button to select model
 - [ ] Update the delete icon to "fire" or similar. 
-- [ ] Font size increase/decrase/reset.
+- [x] Font size increase/decrase/reset.

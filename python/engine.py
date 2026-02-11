@@ -1,11 +1,52 @@
 import logging
 import os
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import AsyncGenerator, List
 
-import tomli
-import tomli_w
+# Use tomllib for reading (built into Python 3.11+)
+import tomllib
+
+
+# Simple TOML writer - no external dependency
+def write_toml(data: dict, file_path: Path) -> None:
+    """Write a simple TOML file. Only supports basic nested dicts and lists."""
+    lines = []
+
+    def write_value(val, indent=0):
+        if isinstance(val, str):
+            return f'"{val}"'
+        elif isinstance(val, int):
+            return str(val)
+        elif isinstance(val, bool):
+            return "true" if val else "false"
+        elif isinstance(val, list):
+            return "[" + ", ".join(write_value(v) for v in val) + "]"
+        return str(val)
+
+    def write_table(table, table_name=""):
+        for key, val in table.items():
+            if isinstance(val, dict):
+                # Nested table
+                full_name = f"{table_name}.{key}" if table_name else key
+                lines.append(f"\n[{full_name}]")
+                write_table(val, full_name)
+            elif isinstance(val, list) and val and isinstance(val[0], dict):
+                # Array of tables
+                full_name = f"{table_name}.{key}" if table_name else key
+                for item in val:
+                    lines.append(f"\n[[{full_name}]]")
+                    for k, v in item.items():
+                        lines.append(f"{k} = {write_value(v)}")
+            else:
+                lines.append(f"{key} = {write_value(val)}")
+
+    write_table(data)
+
+    with open(file_path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+
 
 # Configure logging
 logger = logging.getLogger("lightbot.engine")
@@ -22,12 +63,10 @@ USER_CONFIG_FILE = USER_CONFIG_DIR / "config.toml"
 # Otherwise use user home config.toml (production/bundled app)
 if DEV_CONFIG_FILE.exists():
     CONFIG_FILE_PATH = DEV_CONFIG_FILE
-    print(f"[LightBot] Development mode: using {CONFIG_FILE_PATH}")
 else:
     # Ensure user config directory exists
     USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     CONFIG_FILE_PATH = USER_CONFIG_FILE
-    print(f"[LightBot] Production mode: using {CONFIG_FILE_PATH}")
 
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai_like import OpenAILike
@@ -71,11 +110,17 @@ class ConfigManager:
 
     def load(self) -> dict:
         """Load configuration from TOML file."""
+        if not self.config_path.exists():
+            logger.info(
+                f"Config file not found at {self.config_path}, creating default"
+            )
+            self._ensure_config_exists()
+
         try:
             with open(self.config_path, "rb") as f:
-                return tomli.load(f)
+                return tomllib.load(f)
         except Exception as e:
-            logger.error(f"Failed to load config: {e}")
+            logger.error(f"Failed to load config from {self.config_path}: {e}")
             # Return default config on error
             return {
                 "models": {"selected_index": 0, "list": []},
@@ -91,8 +136,7 @@ class ConfigManager:
     def save(self, config: dict):
         """Save configuration to TOML file."""
         try:
-            with open(self.config_path, "wb") as f:
-                tomli_w.dump(config, f)
+            write_toml(config, self.config_path)
         except Exception as e:
             logger.error(f"Failed to save config: {e}")
 
@@ -253,12 +297,20 @@ class ChatEngine:
             standalone_query = result["query"]
             params = result["params"]
 
+            if standalone_query == message:
+                logger.info(
+                    f"[EVENT] Query not rewritten (using original)"
+                )
+
             if params:
                 logger.info(f"[DEBUG] Rewrite params: {params}")
 
             return standalone_query, params
         except Exception as e:
             logger.error(f"Error rewriting query: {e}")
+            import traceback
+
+            logger.error(traceback.format_exc())
             return message, {}
 
     async def _get_search_context(
