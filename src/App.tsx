@@ -3,7 +3,9 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import ChatWindow from "./components/ChatWindow";
 import SettingsPanel from "./components/SettingsPanel";
 import TitleBar, { type ModelConfig } from "./components/TitleBar";
+import SessionTabs from "./components/SessionTabs";
 import { useSidecar } from "./hooks/useSidecar";
+import { useChatSessions } from "./hooks/useChatSessions";
 
 function App() {
   const [showSettings, setShowSettings] = useState(false);
@@ -20,6 +22,9 @@ function App() {
   const [models, setModels] = useState<ModelConfig[]>([]);
   const [selectedModelIndex, setSelectedModelIndex] = useState(0);
   const { isReady, error, port: sidecarPort } = useSidecar();
+  
+  // Multi-session state management
+  const { sessions, activeSessionId, createSession, deleteSession, switchSession } = useChatSessions();
 
   // Fetch settings from backend
   useEffect(() => {
@@ -144,6 +149,15 @@ function App() {
         apiPort={sidecarPort}
       />
 
+      {/* Session Tabs */}
+      <SessionTabs
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onSwitchSession={switchSession}
+        onCreateSession={createSession}
+        onDeleteSession={deleteSession}
+      />
+
       {/* Main Content */}
       <div className="flex-1 relative">
         {/* Chat Window - fills container */}
@@ -167,7 +181,12 @@ function App() {
               </div>
             </div>
           ) : (
-            <ChatWindow apiPort={sidecarPort} hotkey={hotkey} fontSize={fontSize} />
+            <ChatWindow 
+              apiPort={sidecarPort} 
+              hotkey={hotkey} 
+              fontSize={fontSize} 
+              sessionId={activeSessionId}
+            />
           )}
         </div>
 

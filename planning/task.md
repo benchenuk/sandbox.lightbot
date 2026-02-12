@@ -17,10 +17,11 @@
     - [x] Implement LLM Interface (Dual Model Support via OpenAILike)
     - [x] Implement Ephemeral Memory (In-memory Chat History)
     - [x] Integrate Chat Logic & Search (Query Rewriting Pipeline)
-- [ ] Frontend Core (React/Tauri)
+- [x] Frontend Core (React/Tauri) ✅ COMPLETE
     - [x] Basic Chat UI Layout (Finalizing TUI Style)
     - [x] Markdown Rendering & Copy-to-Clipboard
     - [x] Settings Page (LLM Selection, Search Providers, Hotkeys)
+    - [x] Multi-Tab Support (Multiple Chat Sessions with LED Indicators)
 - [x] Web Search Capability
     - [x] Integrate Search Tool (DDGS, SearXNG)
     - [x] UI toggle for web search options

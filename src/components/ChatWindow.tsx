@@ -25,14 +25,15 @@ interface ChatWindowProps {
   apiPort: number | null;
   hotkey: string;
   fontSize?: "small" | "medium" | "large";
+  sessionId?: string;
 }
 
-export default function ChatWindow({ apiPort, hotkey, fontSize = "medium" }: ChatWindowProps) {
+export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessionId }: ChatWindowProps) {
   const [searchMode, setSearchMode] = useState<SearchMode>("off");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const { messages, isStreaming, error, sendMessage, stopStreaming, clearMessages } =
-    useChat({ apiPort, searchMode });
+    useChat({ apiPort, searchMode, sessionId });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

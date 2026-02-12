@@ -372,13 +372,116 @@ When web search is enabled, the flow is:
 - [x] Collapsible Model Editor UI
 - [x] Migration script (.env → TOML)
 
-### Phase 5: Packaging & Distribution 🔄 IN PROGRESS
+### Phase 5: Multi-Tab Support ✅ COMPLETE
+- [x] Multiple concurrent chat sessions
+- [x] LED dot tab indicators (8-color cycle)
+- [x] Session-aware message persistence
+- [x] Ephemeral session storage (no persistence)
+
+### Phase 6: Packaging & Distribution 🔄 IN PROGRESS
 - [x] PyInstaller Build Script
 - [x] Multi-path discovery in Rust
 - [x] Manual Dev Mode support
 - [x] macOS App Bundling
 - [x] Version bumping automation
 - [ ] Code Signing & Notarization
+
+---
+
+## Multi-Tab Support
+
+LightBot supports multiple concurrent chat sessions through a minimal LED-dot tab interface.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────┐
+│  App.tsx                                │
+│  ├── useChatSessions()                  │
+│  │   └── sessions: ChatSession[]        │
+│  ├── SessionTabs (LED dots)             │
+│  └── ChatWindow                         │
+│       └── useChat()                     │
+│            └── messagesMapRef: Map      │
+│                <sessionId, Message[]>   │
+└─────────────────────────────────────────┘
+```
+
+### Session State Management
+
+**Hook**: `useChatSessions.ts`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `sessions` | `ChatSession[]` | Array of session objects |
+| `activeSessionId` | `string` | Currently active session UUID |
+| `createSession()` | `() => void` | Creates new session with unique color |
+| `deleteSession(id)` | `(string) => void` | Removes session, auto-creates if last |
+| `switchSession(id)` | `(string) => void` | Switches active session |
+
+### Session Color Palette
+
+Tabs are identified by colored LED dots (8 colors, cycle through, never consecutive same):
+
+| Index | Color | Hex |
+|-------|-------|-----|
+| 0 | Blue | `#3b82f6` |
+| 1 | Emerald | `#10b981` |
+| 2 | Amber | `#f59e0b` |
+| 3 | Red | `#ef4444` |
+| 4 | Violet | `#8b5cf6` |
+| 5 | Pink | `#ec4899` |
+| 6 | Cyan | `#06b6d4` |
+| 7 | Lime | `#84cc16` |
+
+### UI Behavior
+
+```
+┌─────────────────────────────┐
+│ TitleBar                    │
+├─────────────────────────────┤
+│  ●  ●  ●  +                 │  ← LED dots + new tab button
+├─────────────────────────────┤
+│                             │
+│    ChatWindow               │
+│                             │
+└─────────────────────────────┘
+```
+
+**Interactions**:
+- **Click dot** → Switch to that session
+- **Right-click dot** → Shows X button → Click X to close
+- **Click +** → Create new session
+- **Last tab closed** → Auto-creates new session
+
+### Message Persistence
+
+Messages are stored per-session in a Map within the `useChat` hook:
+
+```typescript
+// Map<sessionId, Message[]>
+const messagesMapRef = useRef<Map<string, Message[]>>(new Map());
+```
+
+- Messages persist when switching tabs (loaded from Map)
+- Messages cleared when tab is closed
+- All messages cleared on app quit (ephemeral)
+- No localStorage or file persistence
+
+### Backend Compatibility
+
+The Python sidecar already supports multi-session:
+- `session_id` parameter in `/chat/stream` endpoint
+- Per-session memory in `ChatEngine._memory: dict[str, list[ChatMessage]]`
+- Per-session clear via `/chat/clear?session_id={id}`
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `src/hooks/useChatSessions.ts` | Session state management |
+| `src/components/SessionTabs.tsx` | LED dot tab UI |
+| `src/hooks/useChat.ts` | Session-aware message storage |
 
 ---
 
@@ -544,4 +647,4 @@ npm run tauri-dev
 
 ---
 
-*Last Updated: 2026-02-10*
+*Last Updated: 2026-02-12*

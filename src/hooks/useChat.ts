@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export interface Message {
   id: string;
@@ -16,10 +16,31 @@ interface UseChatOptions {
 }
 
 export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: UseChatOptions) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Use a ref to store messages for all sessions
+  const messagesMapRef = useRef<Map<string, Message[]>>(new Map());
+  
+  // Local state for current session's messages
+  const [messages, setMessages] = useState<Message[]>(() => {
+    return messagesMapRef.current.get(sessionId) || [];
+  });
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // When sessionId changes, load the messages for that session
+  useEffect(() => {
+    const sessionMessages = messagesMapRef.current.get(sessionId) || [];
+    setMessages(sessionMessages);
+  }, [sessionId]);
+
+  // Helper to update both local state and the map
+  const updateMessages = useCallback((newMessages: Message[] | ((prev: Message[]) => Message[])) => {
+    setMessages((prev) => {
+      const updated = typeof newMessages === "function" ? newMessages(prev) : newMessages;
+      messagesMapRef.current.set(sessionId, updated);
+      return updated;
+    });
+  }, [sessionId]);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -36,7 +57,7 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, userMessage]);
+      updateMessages((prev) => [...prev, userMessage]);
       setIsStreaming(true);
       setError(null);
 
@@ -62,7 +83,7 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
           content: "",
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, assistantMessage]);
+        updateMessages((prev) => [...prev, assistantMessage]);
 
         // Stream the response
         const reader = response.body?.getReader();
@@ -74,7 +95,7 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
             if (done) break;
 
             const chunk = decoder.decode(value, { stream: true });
-            setMessages((prev) =>
+            updateMessages((prev) =>
               prev.map((msg) =>
                 msg.id === assistantMessageId
                   ? { ...msg, content: msg.content + chunk }
@@ -92,7 +113,7 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
         abortControllerRef.current = null;
       }
     },
-    [apiPort, sessionId, searchMode]
+    [apiPort, sessionId, searchMode, updateMessages]
   );
 
   const stopStreaming = useCallback(() => {
@@ -102,6 +123,7 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
 
   const clearMessages = useCallback(async () => {
     setMessages([]);
+    messagesMapRef.current.set(sessionId, []);
     setError(null);
 
     if (apiPort) {
