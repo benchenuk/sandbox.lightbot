@@ -1,17 +1,19 @@
 # LightBot
 
-A lightweight, native MacOS desktop AI chat application with web search capabilities.
+A fast, lightweight AI assistant. Quick setup to chat with any OpenAI-compatible LLMs. Run with local model if you prefer a private conversation. Companied with web search capability to compensate model knowledge cutoff. Come with handy features that are ideal for spontaneous and quick chat right at your desktop. MacOS native. 
+
 
 <img src="screenshot.png" alt="screenshot" width="480"/>
 
 ## Features
 
-- 🤖 **AI Chat**: Support for OpenAI-compatible LLMs (local or remote)
- - 🔍 **Web Search**: Integrated DDGS and SearXNG search- 💻 **Native App**: Built with Tauri for native MacOS experience
-- ⚡ **Global Hotkey**: Quick access from anywhere (default: `Cmd+Shift+O`)
+- 🤖 **AI Chat**: OpenAI-compatible LLMs (local or remote)
+- 🔍 **Web Search**: Integrated DDGS and SearXNG search
+- 💻 **Native App**: Built with Tauri for macOS
+- ⚡ **Global Hotkey**: Quick access from anywhere (`Cmd+Shift+O`)
 - 🔔 **System Tray**: Runs in background with menubar access
-- 🎨 **TUI Style**: Minimalist terminal-inspired design
-- 💾 **Ephemeral Memory**: No long-term storage, session-only chat history
+- 📑 **Multi-Tab**: Multiple concurrent chat sessions
+- 💾 **Ephemeral**: No persistence, session-only history
 
 ## Architecture
 
@@ -121,7 +123,6 @@ The built app will be in `src-tauri/target/release/bundle/`.
 ## Documentation
 
 - [Technical Specification](planning/tech_spec.md) - Detailed architecture, API docs, and implementation status
-- [Implementation Plan](planning/implementation_plan.md) - Original project plan
 - [Wishlist](planning/wishlist.md) - Feature ideas and future enhancements
 
 ## Project Structure
