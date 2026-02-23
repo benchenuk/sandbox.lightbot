@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Copy, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import type { Components } from 'react-markdown';
 import type { Message } from "../hooks/useChat";
 
 interface MessageItemProps {
@@ -46,7 +47,7 @@ function HighlightText({ text, query }: { text: string; query: string }) {
 }
 
 // Custom components that wrap text nodes with highlighting
-function createHighlightComponents(query: string) {
+function createHighlightComponents(query: string): Components {
   if (!query.trim()) return {};
   
   const HighlightWrapper = ({ children }: { children: React.ReactNode }) => {
@@ -68,30 +69,24 @@ function createHighlightComponents(query: string) {
   };
   
   return {
-    p: ({ children }: { children: React.ReactNode }) => (
+    p: ({ children }) => (
       <p className="mb-2 last:mb-0"><HighlightWrapper>{children}</HighlightWrapper></p>
     ),
-    li: ({ children }: { children: React.ReactNode }) => (
+    li: ({ children }) => (
       <li><HighlightWrapper>{children}</HighlightWrapper></li>
     ),
-    strong: ({ children }: { children: React.ReactNode }) => (
+    strong: ({ children }) => (
       <strong><HighlightWrapper>{children}</HighlightWrapper></strong>
     ),
-    em: ({ children }: { children: React.ReactNode }) => (
+    em: ({ children }) => (
       <em><HighlightWrapper>{children}</HighlightWrapper></em>
     ),
-    code: ({ children }: { children: React.ReactNode }) => {
+    code: ({ children }) => {
       const isInline = !children?.toString().includes('\n');
       if (isInline) {
         return <code className="bg-surface-secondary px-1 py-0.5 rounded text-sm"><HighlightWrapper>{children}</HighlightWrapper></code>;
       }
       return <code>{children}</code>;
-    },
-    span: ({ children }: { children: React.ReactNode }) => (
-      <span><HighlightWrapper>{children}</HighlightWrapper></span>
-    ),
-    text: ({ children }: { children: string }) => {
-      return <HighlightText text={children} query={query} />;
     },
   };
 }
