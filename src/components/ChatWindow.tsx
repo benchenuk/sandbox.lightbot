@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { Send, Square, Trash2, Globe, ChevronUp, ChevronDown } from "lucide-react";
 import { useChat, type SearchMode } from "../hooks/useChat";
 import MessageItem from "./MessageItem";
@@ -28,14 +28,19 @@ interface ChatWindowProps {
   sessionId?: string;
 }
 
+// Threshold in pixels for considering the user at the bottom
+const SCROLL_BOTTOM_THRESHOLD = 50;
+
 export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessionId }: ChatWindowProps) {
   const [searchMode, setSearchMode] = useState<SearchMode>("off");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const { messages, isStreaming, error, sendMessage, stopStreaming, clearMessages } =
     useChat({ apiPort, searchMode, sessionId });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Format hotkey for display
   const displayHotkey = hotkey
@@ -45,10 +50,31 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
     .replace(/Control|Ctrl/gi, "⌃")
     .replace(/\+/g, "");
 
-  // Auto-scroll to bottom
+  // Check if the user is near the bottom of the scroll container
+  const isNearBottom = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    return scrollHeight - scrollTop - clientHeight < SCROLL_BOTTOM_THRESHOLD;
+  }, []);
+
+  // Handle scroll events to detect user-initiated scroll
+  const handleScroll = useCallback(() => {
+    const nearBottom = isNearBottom();
+    setIsUserScrolledUp(!nearBottom);
+  }, [isNearBottom]);
+
+  // Scroll to bottom helper
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  }, []);
+
+  // Auto-scroll to bottom only if user hasn't scrolled up
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!isUserScrolledUp) {
+      scrollToBottom("smooth");
+    }
+  }, [messages, isUserScrolledUp, scrollToBottom]);
 
   // Focus input on mount
   useEffect(() => {
@@ -83,7 +109,10 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
   return (
     <div className="flex flex-col h-full bg-surface">
       {/* Messages Area - Font size only affects chat content */}
-      <div className={`flex-1 overflow-y-auto font-size-${fontSize}`}>
+      <div 
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className={`flex-1 overflow-y-auto relative font-size-${fontSize}`}>
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-text-muted">
             <div className="text-3xl mb-3 opacity-30 font-mono">💡</div>
