@@ -76,7 +76,7 @@ class ChatResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    version: str = "1.4.0"
+    version: str = "1.4.1"
     error: str | None = None
 
 
@@ -112,7 +112,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 app = FastAPI(
     title="LightBot Sidecar",
     description="AI Chat and Web Search API for LightBot",
-    version="1.4.0",
+    version="1.4.1",
     lifespan=lifespan,
 )
 
