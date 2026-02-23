@@ -49,7 +49,7 @@ A fast, lightweight AI assistant. Quick setup to chat with any OpenAI-compatible
 - **Backend**: Python + FastAPI
 - **AI Framework**: LlamaIndex
 - **LLM Support**: OpenAI-compatible API (any provider)
- - **Search**: DDGS, SearXNG
+- **Search**: DDGS, SearXNG
 ## Prerequisites
 
 - Node.js 18+
@@ -106,19 +106,51 @@ In this mode, Tauri will connect to your running Python process instead of tryin
 
 ## Building
 
+### Prerequisites
+
+Ensure you have the Python virtual environment set up and dependencies installed:
+
+```bash
+source venv/bin/activate
+```
+
 ### Build Python Sidecar
 
 ```bash
 ./scripts/build-sidecar.sh
 ```
 
+This uses `lightbot.spec` to build the Python sidecar binary with PyInstaller.
+
 ### Build Full Application
 
 ```bash
+# Build frontend and Tauri app
 npm run tauri-build
 ```
 
-The built app will be in `src-tauri/target/release/bundle/`.
+The built app will be in `src-tauri/target/release/bundle/`:
+- **App**: `src-tauri/target/release/bundle/macos/LightBot.app`
+- **DMG**: `src-tauri/target/release/bundle/dmg/LightBot_*.dmg`
+
+### Release Build (Versioned)
+
+To create a versioned release with proper metadata:
+
+```bash
+./scripts/release.sh 1.5.0
+```
+
+### Clean Build
+
+If you encounter build issues, clean and rebuild:
+
+```bash
+rm -rf build dist src-tauri/bin/* src-tauri/target/release/bundle
+./scripts/build-sidecar.sh
+npm run build
+npm run tauri-build
+```
 
 ## Documentation
 
@@ -144,6 +176,9 @@ lightbot/
 │   ├── engine.py           # Chat engine
 │   └── tools/              # Tools (search, etc.)
 ├── scripts/                # Build scripts
+│   ├── build-sidecar.sh    # Build Python sidecar binary
+│   └── release.sh          # Full release build
+├── lightbot.spec           # PyInstaller configuration
 ├── planning/               # Project planning docs
 └── README.md
 ```
