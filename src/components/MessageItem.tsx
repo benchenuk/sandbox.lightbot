@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Copy, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -6,9 +6,97 @@ import type { Message } from "../hooks/useChat";
 
 interface MessageItemProps {
   message: Message;
+  searchQuery?: string;
 }
 
-export default function MessageItem({ message }: MessageItemProps) {
+// Highlight matching text in a string - highlights ALL occurrences
+function HighlightText({ text, query }: { text: string; query: string }) {
+  const parts = useMemo(() => {
+    if (!query.trim()) return [{ text, isMatch: false }];
+    
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
+    const splitParts = text.split(regex);
+    
+    // Filter out empty strings and mark matches
+    return splitParts
+      .filter(part => part.length > 0)
+      .map((part) => ({
+        text: part,
+        isMatch: part.toLowerCase() === query.toLowerCase(),
+      }));
+  }, [text, query]);
+
+  return (
+    <>
+      {parts.map((part, index) =>
+        part.isMatch ? (
+          <mark
+            key={index}
+            className="bg-yellow-400/80 text-black rounded px-0.5 font-medium"
+          >
+            {part.text}
+          </mark>
+        ) : (
+          <span key={index}>{part.text}</span>
+        )
+      )}
+    </>
+  );
+}
+
+// Custom components that wrap text nodes with highlighting
+function createHighlightComponents(query: string) {
+  if (!query.trim()) return {};
+  
+  const HighlightWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (typeof children === 'string') {
+      return <HighlightText text={children} query={query} />;
+    }
+    if (Array.isArray(children)) {
+      return (
+        <>
+          {children.map((child, i) => 
+            typeof child === 'string' 
+              ? <HighlightText key={i} text={child} query={query} />
+              : <span key={i}>{child}</span>
+          )}
+        </>
+      );
+    }
+    return <>{children}</>;
+  };
+  
+  return {
+    p: ({ children }: { children: React.ReactNode }) => (
+      <p className="mb-2 last:mb-0"><HighlightWrapper>{children}</HighlightWrapper></p>
+    ),
+    li: ({ children }: { children: React.ReactNode }) => (
+      <li><HighlightWrapper>{children}</HighlightWrapper></li>
+    ),
+    strong: ({ children }: { children: React.ReactNode }) => (
+      <strong><HighlightWrapper>{children}</HighlightWrapper></strong>
+    ),
+    em: ({ children }: { children: React.ReactNode }) => (
+      <em><HighlightWrapper>{children}</HighlightWrapper></em>
+    ),
+    code: ({ children }: { children: React.ReactNode }) => {
+      const isInline = !children?.toString().includes('\n');
+      if (isInline) {
+        return <code className="bg-surface-secondary px-1 py-0.5 rounded text-sm"><HighlightWrapper>{children}</HighlightWrapper></code>;
+      }
+      return <code>{children}</code>;
+    },
+    span: ({ children }: { children: React.ReactNode }) => (
+      <span><HighlightWrapper>{children}</HighlightWrapper></span>
+    ),
+    text: ({ children }: { children: string }) => {
+      return <HighlightText text={children} query={query} />;
+    },
+  };
+}
+
+export default function MessageItem({ message, searchQuery = "" }: MessageItemProps) {
   const [copied, setCopied] = useState(false);
   const isUser = message.role === "user";
 
@@ -18,8 +106,26 @@ export default function MessageItem({ message }: MessageItemProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // For user messages, render with highlighting
+  const renderUserContent = () => {
+    if (!searchQuery.trim()) return message.content;
+    
+    // Split by newlines and highlight each line
+    const lines = message.content.split('\n');
+    return lines.map((line, lineIndex) => (
+      <span key={lineIndex}>
+        <HighlightText text={line} query={searchQuery} />
+        {lineIndex < lines.length - 1 && <br />}
+      </span>
+    ));
+  };
+
   return (
-    <div className={`group border-b border-border-subtle ${isUser ? 'bg-surface' : 'bg-surface-secondary/50'}`}>
+    <div 
+      className={`group border-b border-border-subtle ${
+        isUser ? 'bg-surface' : 'bg-surface-secondary/50'
+      }`}
+    >
       {/* Header with role and timestamp */}
       <div className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-2">
@@ -47,10 +153,15 @@ export default function MessageItem({ message }: MessageItemProps) {
       {/* Content */}
       <div className="px-4 pb-3">
         {isUser ? (
-          <p className="text-text-primary text-base leading-relaxed whitespace-pre-wrap">{message.content}</p>
+          <p className="text-text-primary text-base leading-relaxed whitespace-pre-wrap">
+            {renderUserContent()}
+          </p>
         ) : (
           <div className="markdown text-text-primary text-base">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              components={createHighlightComponents(searchQuery)}
+            >
               {message.content.replace(/<think>[\s\S]*?(?:<\/think>|$)/g, "").trim()}
             </ReactMarkdown>
           </div>

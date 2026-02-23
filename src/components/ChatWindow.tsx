@@ -1,5 +1,5 @@
-import { useRef, useEffect, useState, useCallback } from "react";
-import { Send, Square, Trash2, Globe, ChevronUp, ChevronDown } from "lucide-react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import { Send, Square, Trash2, Globe, ChevronUp, ChevronDown, Search, X } from "lucide-react";
 import { useChat, type SearchMode } from "../hooks/useChat";
 import MessageItem from "./MessageItem";
 
@@ -36,11 +36,21 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
+  const [chatSearchQuery, setChatSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const { messages, isStreaming, error, sendMessage, stopStreaming, clearMessages } =
     useChat({ apiPort, searchMode, sessionId });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Filter messages based on search query (case-insensitive)
+  const filteredMessages = useMemo(() => {
+    if (!chatSearchQuery.trim() || !isSearchOpen) return messages;
+    const queryLower = chatSearchQuery.toLowerCase();
+    return messages.filter((msg) => msg.content.toLowerCase().includes(queryLower));
+  }, [messages, chatSearchQuery, isSearchOpen]);
 
   // Format hotkey for display
   const displayHotkey = hotkey
@@ -81,6 +91,30 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
     textareaRef.current?.focus();
   }, []);
 
+  // Keyboard shortcut: Cmd/Ctrl+F to toggle search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        e.preventDefault();
+        if (isSearchOpen) {
+          // If already open, focus the input
+          searchInputRef.current?.focus();
+        } else {
+          // Open search
+          setIsSearchOpen(true);
+          // Focus after render
+          setTimeout(() => searchInputRef.current?.focus(), 10);
+        }
+      }
+      if (e.key === "Escape" && isSearchOpen) {
+        setIsSearchOpen(false);
+        setChatSearchQuery("");
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isSearchOpen]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const content = textareaRef.current?.value.trim();
@@ -113,6 +147,46 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
         ref={messagesContainerRef}
         onScroll={handleScroll}
         className={`flex-1 overflow-y-auto relative font-size-${fontSize}`}>
+        
+        {/* Chat Search Bar - Hidden by default, shown via Cmd+F */}
+        {isSearchOpen && messages.length > 0 && (
+          <div className="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm border-b border-border-subtle px-3 py-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={chatSearchQuery}
+                  onChange={(e) => setChatSearchQuery(e.target.value)}
+                  placeholder="Search in chat..."
+                  className="w-full pl-8 pr-16 py-1.5 bg-surface-secondary border border-border-subtle rounded-lg
+                           text-sm text-text-primary placeholder-text-disabled
+                           focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20"
+                />
+                {chatSearchQuery && (
+                  <button
+                    onClick={() => setChatSearchQuery("")}
+                    className="absolute right-8 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setIsSearchOpen(false);
+                    setChatSearchQuery("");
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+                  title="Close (ESC)"
+                >
+                  <span className="text-xs">ESC</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-text-muted">
             <div className="text-3xl mb-3 opacity-30 font-mono">💡</div>
@@ -124,9 +198,24 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
               Chat session is ephemeral
             </p>
           </div>
+        ) : filteredMessages.length === 0 && isSearchOpen ? (
+          <div className="h-full flex flex-col items-center justify-center text-text-muted py-12">
+            <Search size={24} className="opacity-30 mb-2" />
+            <p className="text-sm">No messages match "{chatSearchQuery}"</p>
+            <button
+              onClick={() => setChatSearchQuery("")}
+              className="mt-2 text-xs text-accent hover:underline"
+            >
+              Clear search
+            </button>
+          </div>
         ) : (
-          messages.map((message) => (
-            <MessageItem key={message.id} message={message} />
+          filteredMessages.map((message) => (
+            <MessageItem 
+              key={message.id} 
+              message={message} 
+              searchQuery={isSearchOpen ? chatSearchQuery : ""}
+            />
           ))
         )}
         <div ref={messagesEndRef} />
