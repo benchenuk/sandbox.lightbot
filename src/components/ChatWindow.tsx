@@ -143,11 +143,11 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
   return (
     <div className="flex flex-col h-full bg-surface">
       {/* Messages Area - Font size only affects chat content */}
-      <div 
+      <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
         className={`flex-1 overflow-y-auto relative font-size-${fontSize}`}>
-        
+
         {/* Chat Search Bar - Hidden by default, shown via Cmd+F */}
         {isSearchOpen && messages.length > 0 && (
           <div className="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm border-b border-border-subtle px-3 py-2">
@@ -211,9 +211,9 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
           </div>
         ) : (
           filteredMessages.map((message) => (
-            <MessageItem 
-              key={message.id} 
-              message={message} 
+            <MessageItem
+              key={message.id}
+              message={message}
               searchQuery={isSearchOpen ? chatSearchQuery : ""}
             />
           ))
@@ -325,8 +325,8 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
 
       {/* Clear Chat Confirmation Modal */}
       {showClearConfirm && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-surface-secondary border border-border-subtle p-4 max-w-sm mx-4 rounded-lg">
+        <div className={`absolute inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-[1px] transition-all duration-300 ${isExpanded ? "pb-80" : "pb-32"}`}>
+          <div className="bg-surface-secondary border border-border-subtle p-5 max-w-sm mx-4 rounded-xl shadow-2xl transition-all">
             <h3 className="text-text-primary font-medium mb-2">Clear Chat?</h3>
             <p className="text-text-muted text-sm mb-4">
               This will delete all messages in the current conversation. This action cannot be undone.
