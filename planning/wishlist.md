@@ -24,5 +24,5 @@
 - [ ] 3-section Search button (off->general->more) to increase search results. 0->5->10
 - [ ] Slider to set number of searches in settings 
 - [x] Allow scroll-back during chat output
-- [ ] Search on tab
-
+- [x] Search on tab
+- [ ] Obsidian export

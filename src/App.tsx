@@ -6,6 +6,7 @@ import TitleBar, { type ModelConfig } from "./components/TitleBar";
 import SessionTabs from "./components/SessionTabs";
 import { useSidecar } from "./hooks/useSidecar";
 import { useChatSessions } from "./hooks/useChatSessions";
+import { ClipProvider } from "./contexts/ClipContext";
 
 function App() {
   const [showSettings, setShowSettings] = useState(false);
@@ -181,12 +182,14 @@ function App() {
               </div>
             </div>
           ) : (
-            <ChatWindow 
-              apiPort={sidecarPort} 
-              hotkey={hotkey} 
-              fontSize={fontSize} 
-              sessionId={activeSessionId}
-            />
+            <ClipProvider>
+              <ChatWindow 
+                apiPort={sidecarPort} 
+                hotkey={hotkey} 
+                fontSize={fontSize} 
+                sessionId={activeSessionId}
+              />
+            </ClipProvider>
           )}
         </div>
 

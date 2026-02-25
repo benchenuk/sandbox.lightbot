@@ -1,13 +1,17 @@
 import { useState, useMemo } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Clipboard } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from 'react-markdown';
 import type { Message } from "../hooks/useChat";
+import { useClip } from "../hooks/useClip";
+import ClipModal from "./ClipModal";
 
 interface MessageItemProps {
   message: Message;
   searchQuery?: string;
+  apiPort: number | null;
+  sessionId?: string;
 }
 
 // Highlight matching text in a string - highlights ALL occurrences
@@ -91,14 +95,20 @@ function createHighlightComponents(query: string): Components {
   };
 }
 
-export default function MessageItem({ message, searchQuery = "" }: MessageItemProps) {
+export default function MessageItem({ message, searchQuery = "", apiPort, sessionId = "default" }: MessageItemProps) {
   const [copied, setCopied] = useState(false);
+  const [showClipModal, setShowClipModal] = useState(false);
   const isUser = message.role === "user";
+  const { clipMessage } = useClip({ apiPort });
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleClip = async (title: string, tags: string[]) => {
+    return await clipMessage(title, tags, message.content);
   };
 
   // For user messages, render with highlighting
@@ -136,13 +146,24 @@ export default function MessageItem({ message, searchQuery = "" }: MessageItemPr
         </div>
         
         {/* Copy Button */}
-        <button
-          onClick={handleCopy}
-          className="opacity-0 group-hover:opacity-100 p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all"
-          title="Copy"
-        >
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-        </button>
+        <div className="flex items-center gap-1">
+          {!isUser && (
+            <button
+              onClick={() => setShowClipModal(true)}
+              className="opacity-0 group-hover:opacity-100 p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all"
+              title="Clip"
+            >
+              <Clipboard size={12} />
+            </button>
+          )}
+          <button
+            onClick={handleCopy}
+            className="opacity-0 group-hover:opacity-100 p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-all"
+            title="Copy"
+          >
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -162,6 +183,15 @@ export default function MessageItem({ message, searchQuery = "" }: MessageItemPr
           </div>
         )}
       </div>
+
+      {/* Clip Modal */}
+      <ClipModal
+        isOpen={showClipModal}
+        onClose={() => setShowClipModal(false)}
+        content={message.content}
+        onClip={handleClip}
+        sessionId={sessionId}
+      />
     </div>
   );
 }

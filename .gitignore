@@ -24,3 +24,5 @@ src-tauri/bin/python-sidecar*
 # Local
 .DS_Store
 .env
+# Ignore context files
+.context/

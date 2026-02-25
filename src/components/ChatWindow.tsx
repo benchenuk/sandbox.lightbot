@@ -215,6 +215,8 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
               key={message.id}
               message={message}
               searchQuery={isSearchOpen ? chatSearchQuery : ""}
+              apiPort={apiPort}
+              sessionId={sessionId}
             />
           ))
         )}

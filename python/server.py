@@ -74,9 +74,21 @@ class ChatResponse(BaseModel):
     response: str
 
 
+class ClipRequest(BaseModel):
+    title: str
+    tags: list[str] = []
+    content: str
+
+
+class ClipResponse(BaseModel):
+    status: str
+    path: str | None = None
+    error: str | None = None
+
+
 class HealthResponse(BaseModel):
     status: str
-    version: str = "1.4.1"
+    version: str = "1.5.0"
     error: str | None = None
 
 
@@ -112,7 +124,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 app = FastAPI(
     title="LightBot Sidecar",
     description="AI Chat and Web Search API for LightBot",
-    version="1.4.1",
+    version="1.5.0",
     lifespan=lifespan,
 )
 
@@ -195,6 +207,68 @@ async def update_settings(settings: dict) -> dict:
         chat_engine.update_settings(settings)
         return {"status": "updated"}
     return {"status": "error", "message": "Engine not initialized"}
+
+
+@app.post("/clip", response_model=ClipResponse)
+async def clip_message(request: ClipRequest) -> ClipResponse:
+    """Save a message to the clippings folder."""
+    import re
+    from datetime import datetime
+
+    # Determine clippings directory - use project root or parent of python/
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    clippings_dir = project_root / "clippings"
+
+    try:
+        clippings_dir.mkdir(parents=True, exist_ok=True)
+
+        # Sanitize filename: remove invalid chars but keep spaces
+        safe_name = re.sub(r"[^\w\- ]", "", request.title.strip())
+        safe_name = re.sub(r"-+", "-", safe_name).strip("-")
+
+        if not safe_name:
+            safe_name = "untitled"
+
+        filename = f"{safe_name}.md"
+        filepath = clippings_dir / filename
+
+        # If file exists, append content with separator
+        if filepath.exists():
+            separator = "\n\n---\n\n"
+            existing_content = filepath.read_text(encoding="utf-8")
+            new_content = existing_content + separator + request.content
+            filepath.write_text(new_content, encoding="utf-8")
+            logger.info(f"Appended to clipping: {filepath}")
+            return ClipResponse(status="success", path=str(filepath))
+
+        # Format date as YYYY-MM-DD
+        date_str = datetime.now().strftime("%Y-%m-%d")
+
+        # Generate frontmatter
+        tags_yaml = "\n".join(
+            f"  - {tag.strip()}" for tag in request.tags if tag.strip()
+        )
+        if tags_yaml:
+            tags_yaml = f"tags:\n{tags_yaml}\n"
+
+        frontmatter = f"""---
+title: "{request.title}"
+created: "{date_str}"
+{tags_yaml}source: 
+---
+"""
+
+        # Write file with frontmatter
+        content = frontmatter + request.content
+        filepath.write_text(content, encoding="utf-8")
+
+        logger.info(f"Clipped message to: {filepath}")
+        return ClipResponse(status="success", path=str(filepath))
+
+    except Exception as e:
+        logger.error(f"Failed to clip message: {e}")
+        return ClipResponse(status="error", error=str(e))
 
 
 def main():
