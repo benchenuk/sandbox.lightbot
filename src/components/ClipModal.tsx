@@ -70,6 +70,18 @@ export default function ClipModal({ isOpen, onClose, content, onClip, sessionId 
 
   const tags = tagsInput.split(",").map((t) => t.trim()).filter((t) => t);
   const today = new Date().toISOString().split("T")[0];
+  const isAppending = history.includes(title);
+
+  const previewContent = isAppending
+    ? `\n---\n\n${content.slice(0, 100)}${content.length > 100 ? "..." : ""}`
+    : `---
+title: "${title || "..."}"
+created: "${today}"
+tags:${tags.map((t) => `\n  - ${t}`).join("")}
+source: 
+---
+
+${content.slice(0, 100)}${content.length > 100 ? "..." : ""}`;
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
@@ -108,14 +120,7 @@ export default function ClipModal({ isOpen, onClose, content, onClip, sessionId 
           <div className="mb-4 p-3 bg-surface rounded-md">
             <p className="text-text-muted text-xs mb-2">Preview:</p>
             <pre className="text-text-primary text-xs font-mono whitespace-pre-wrap">
-{`---
-title: "${title || "..."}"
-created: "${today}"
-tags:${tags.map((t) => `\n  - ${t}`).join("")}
-source: 
----
-
-${content.slice(0, 100)}${content.length > 100 ? "..." : ""}`}
+{previewContent}
             </pre>
           </div>
 

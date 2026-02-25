@@ -8,12 +8,13 @@ A fast, lightweight AI assistant. Quick setup to chat with any OpenAI-compatible
 ## Features
 
 - 🤖 **AI Chat**: OpenAI-compatible LLMs (local or remote)
+- 💾 **Ephemeral**: No persistence, session-only history
 - 🔍 **Web Search**: Integrated DDGS and SearXNG search
 - 💻 **Native App**: Built with Tauri for macOS
 - ⚡ **Global Hotkey**: Quick access from anywhere (`Cmd+Shift+O`)
 - 🔔 **System Tray**: Runs in background with menubar access
 - 📑 **Multi-Tab**: Multiple concurrent chat sessions
-- 💾 **Ephemeral**: No persistence, session-only history
+- 📋 **Clipping**: Export answers to markdown files
 
 ## Architecture
 
