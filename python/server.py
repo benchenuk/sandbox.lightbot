@@ -215,10 +215,24 @@ async def clip_message(request: ClipRequest) -> ClipResponse:
     import re
     from datetime import datetime
 
-    # Determine clippings directory - use project root or parent of python/
+    global chat_engine
+
+    # Determine clippings directory
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
-    clippings_dir = project_root / "clippings"
+
+    # Get clippings_path from settings (default to "~/.lightbot/clippings")
+    clippings_path = "~/.lightbot/clippings"
+    if chat_engine:
+        clippings_path = chat_engine.clippings_path
+
+    # Expand ~ to home directory
+    clippings_path = os.path.expanduser(clippings_path)
+
+    # Check if it's an absolute path or relative
+    clippings_dir = Path(clippings_path)
+    if not clippings_dir.is_absolute():
+        clippings_dir = project_root / clippings_path
 
     try:
         clippings_dir.mkdir(parents=True, exist_ok=True)

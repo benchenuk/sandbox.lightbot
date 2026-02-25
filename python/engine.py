@@ -205,6 +205,9 @@ class ChatEngine:
         )
         self.search_provider: str = settings.get("search_provider", "ddgs")
         self.search_url: str = settings.get("search_url", "")
+        self.clippings_path: str = settings.get(
+            "clippings_path", "~/.lightbot/clippings"
+        )
 
         # Ephemeral memory: session_id -> list of messages
         self._memory: dict[str, list[ChatMessage]] = defaultdict(list)
@@ -298,9 +301,7 @@ class ChatEngine:
             params = result["params"]
 
             if standalone_query == message:
-                logger.info(
-                    f"[EVENT] Query not rewritten (using original)"
-                )
+                logger.info(f"[EVENT] Query not rewritten (using original)")
 
             if params:
                 logger.info(f"[DEBUG] Rewrite params: {params}")
@@ -460,6 +461,7 @@ class ChatEngine:
             "search_provider": settings.get("search_provider", "ddgs"),
             "search_url": settings.get("search_url", ""),
             "hotkey": settings.get("hotkey", "Command+Shift+O"),
+            "clippings_path": settings.get("clippings_path", "clippings"),
         }
 
     def update_settings(self, settings: dict):
@@ -546,6 +548,10 @@ class ChatEngine:
 
         if "hotkey" in settings:
             config["settings"]["hotkey"] = settings["hotkey"]
+
+        if "clippings_path" in settings:
+            self.clippings_path = settings["clippings_path"]
+            config["settings"]["clippings_path"] = settings["clippings_path"]
 
         # Save config
         self.config_manager.save(config)

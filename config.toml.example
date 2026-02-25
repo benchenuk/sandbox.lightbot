@@ -70,6 +70,11 @@ search_url = ""
 # Requires application restart to take effect
 hotkey = "Command+Shift+O"
 
+# Folder path for clipped messages
+# Default: "~/.lightbot/clippings"
+# Use absolute path or ~/ for home directory
+clippings_path = "~/.lightbot/clippings"
+
 # =============================================================================
 # CONFIGURATION NOTES
 # =============================================================================

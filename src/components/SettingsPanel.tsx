@@ -18,6 +18,7 @@ interface Settings {
   searchUrl: string;
   hotkey: string;
   systemPrompt: string;
+  clippingsPath: string;
 }
 
 const emptySettings: Settings = {
@@ -29,6 +30,7 @@ const emptySettings: Settings = {
   searchUrl: "",
   hotkey: "Command+Shift+O",
   systemPrompt: "",
+  clippingsPath: "~/.lightbot/clippings",
 };
 
 export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, apiPort }: SettingsPanelProps) {
@@ -62,6 +64,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
           searchUrl: backendSettings.search_url || "",
           hotkey: backendSettings.hotkey || "Command+Shift+O",
           systemPrompt: backendSettings.system_prompt || "",
+          clippingsPath: backendSettings.clippings_path || "clippings",
         });
         setInitialHotkey(backendSettings.hotkey || "Command+Shift+O");
         setError(null);
@@ -92,6 +95,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
         search_provider: settings.searchProvider,
         search_url: settings.searchUrl,
         hotkey: settings.hotkey,
+        clippings_path: settings.clippingsPath,
       };
 
       const response = await fetch(`http://127.0.0.1:${apiPort}/settings`, {
@@ -222,6 +226,23 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                 />
                 <p className="text-text-disabled text-xs mt-1">
                   Format: Command+Shift+O, Ctrl+Alt+Space, etc.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
+                  Clippings Folder
+                </label>
+                <input
+                  type="text"
+                  value={settings.clippingsPath}
+                  onChange={(e) => updateSetting("clippingsPath", e.target.value)}
+                  className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
+                           text-text-primary text-sm focus:outline-none focus:border-accent"
+                  placeholder="clippings"
+                />
+                <p className="text-text-disabled text-xs mt-1">
+                  Absolute path or relative to project root
                 </p>
               </div>
             </div>
