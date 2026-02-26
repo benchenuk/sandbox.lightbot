@@ -26,20 +26,24 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  
+  // Track the session ID that initiated the current stream
+  // This ensures output goes to the correct tab even if user switches tabs mid-stream
+  const streamingSessionIdRef = useRef<string | null>(null);
+  
+  // Track the currently visible session ID using a ref so it can be accessed 
+  // from async callbacks without stale closure issues
+  const visibleSessionIdRef = useRef<string>(sessionId);
+  
+  // Update the ref whenever sessionId changes
+  useEffect(() => {
+    visibleSessionIdRef.current = sessionId;
+  }, [sessionId]);
 
   // When sessionId changes, load the messages for that session
   useEffect(() => {
     const sessionMessages = messagesMapRef.current.get(sessionId) || [];
     setMessages(sessionMessages);
-  }, [sessionId]);
-
-  // Helper to update both local state and the map
-  const updateMessages = useCallback((newMessages: Message[] | ((prev: Message[]) => Message[])) => {
-    setMessages((prev) => {
-      const updated = typeof newMessages === "function" ? newMessages(prev) : newMessages;
-      messagesMapRef.current.set(sessionId, updated);
-      return updated;
-    });
   }, [sessionId]);
 
   const sendMessage = useCallback(
@@ -49,6 +53,11 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
         return;
       }
 
+      // Capture the originating session ID to ensure output goes to the right tab
+      // even if user switches tabs while waiting for LLM response
+      const originatingSessionId = sessionId;
+      streamingSessionIdRef.current = originatingSessionId;
+
       // Add user message
       const userMessage: Message = {
         id: crypto.randomUUID(),
@@ -57,7 +66,16 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
         timestamp: new Date(),
       };
 
-      updateMessages((prev) => [...prev, userMessage]);
+      // Update messages for the originating session
+      const currentMessages = messagesMapRef.current.get(originatingSessionId) || [];
+      const messagesWithUser = [...currentMessages, userMessage];
+      messagesMapRef.current.set(originatingSessionId, messagesWithUser);
+      
+      // Only update local state if we're still viewing the originating session
+      if (visibleSessionIdRef.current === originatingSessionId) {
+        setMessages(messagesWithUser);
+      }
+      
       setIsStreaming(true);
       setError(null);
 
@@ -67,7 +85,7 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
         const response = await fetch(`http://127.0.0.1:${apiPort}/chat/stream`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: content, session_id: sessionId, search_mode: searchMode }),
+          body: JSON.stringify({ message: content, session_id: originatingSessionId, search_mode: searchMode }),
           signal: abortControllerRef.current.signal,
         });
 
@@ -83,7 +101,15 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
           content: "",
           timestamp: new Date(),
         };
-        updateMessages((prev) => [...prev, assistantMessage]);
+        
+        // Add assistant placeholder to originating session
+        const messagesWithAssistant = [...messagesWithUser, assistantMessage];
+        messagesMapRef.current.set(originatingSessionId, messagesWithAssistant);
+        
+        // Only update local state if we're still viewing the originating session
+        if (visibleSessionIdRef.current === originatingSessionId) {
+          setMessages(messagesWithAssistant);
+        }
 
         // Stream the response
         const reader = response.body?.getReader();
@@ -95,13 +121,20 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
             if (done) break;
 
             const chunk = decoder.decode(value, { stream: true });
-            updateMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === assistantMessageId
-                  ? { ...msg, content: msg.content + chunk }
-                  : msg
-              )
+            
+            // Update messages for the originating session
+            const currentSessionMessages = messagesMapRef.current.get(originatingSessionId) || [];
+            const updatedMessages = currentSessionMessages.map((msg) =>
+              msg.id === assistantMessageId
+                ? { ...msg, content: msg.content + chunk }
+                : msg
             );
+            messagesMapRef.current.set(originatingSessionId, updatedMessages);
+            
+            // Only update local state if we're still viewing the originating session
+            if (visibleSessionIdRef.current === originatingSessionId) {
+              setMessages(updatedMessages);
+            }
           }
         }
       } catch (err) {
@@ -110,10 +143,11 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
         }
       } finally {
         setIsStreaming(false);
+        streamingSessionIdRef.current = null;
         abortControllerRef.current = null;
       }
     },
-    [apiPort, sessionId, searchMode, updateMessages]
+    [apiPort, sessionId, searchMode]
   );
 
   const stopStreaming = useCallback(() => {
