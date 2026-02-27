@@ -3,7 +3,7 @@ use std::process::Child;
 use std::sync::Mutex;
 use tauri::menu::{CheckMenuItem, Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
-use tauri::{Emitter, Manager, Runtime};
+use tauri::{Emitter, Manager, Runtime, Theme};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 struct SidecarState {
@@ -76,10 +76,19 @@ fn setup_system_tray<R: Runtime>(app: &tauri::AppHandle<R>) -> tauri::Result<()>
     
     let menu = Menu::with_items(app, &[&show_i, &all_workspaces_i, &quit_i])?;
 
-    // Load tray icon (32x32 for standard, scales on retina)
-    let icon = load_png_icon(include_bytes!("../icons/32x32.png"));
+    // Load tray icon based on theme (default to Dark, will be updated by window event)
+    let theme = app.get_webview_window("main")
+        .and_then(|w| w.theme().ok())
+        .unwrap_or(Theme::Dark);
+    
+    let icon_bytes = if theme == Theme::Dark {
+        include_bytes!("../icons/tray_dark.png").as_slice()
+    } else {
+        include_bytes!("../icons/tray_light.png").as_slice()
+    };
+    let icon = load_png_icon(icon_bytes);
 
-    let _tray = TrayIconBuilder::new()
+    let _tray = TrayIconBuilder::with_id("main-tray")
         .icon(icon)
         .menu(&menu)
         .on_menu_event(move |app, event| {
@@ -437,12 +446,22 @@ pub fn run() {
 
             Ok(())
         })
-        .on_window_event(|app, event| {
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::ThemeChanged(theme) = event {
+                if let Some(tray) = window.app_handle().tray_by_id("main-tray") {
+                    let icon_bytes = if *theme == Theme::Dark {
+                        include_bytes!("../icons/tray_dark.png").as_slice()
+                    } else {
+                        include_bytes!("../icons/tray_light.png").as_slice()
+                    };
+                    let icon = load_png_icon(icon_bytes);
+                    let _ = tray.set_icon(Some(icon));
+                }
+            }
+
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 // Hide window instead of closing (keep running in tray)
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.hide();
-                }
+                let _ = window.hide();
                 api.prevent_close();
             }
         })

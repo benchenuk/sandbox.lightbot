@@ -88,7 +88,7 @@ class ClipResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
-    version: str = "1.5.0"
+    version: str = "1.6.0"
     error: str | None = None
 
 
@@ -124,7 +124,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 app = FastAPI(
     title="LightBot Sidecar",
     description="AI Chat and Web Search API for LightBot",
-    version="1.5.0",
+    version="1.6.0",
     lifespan=lifespan,
 )
 
