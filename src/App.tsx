@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
 import ChatWindow from "./components/ChatWindow";
 import SettingsPanel from "./components/SettingsPanel";
 import TitleBar, { type ModelConfig } from "./components/TitleBar";
@@ -62,7 +63,15 @@ function App() {
           const response = await fetch(`http://127.0.0.1:${sidecarPort}/settings`);
           if (response.ok) {
             const data = await response.json();
-            if (data.hotkey) setHotkey(data.hotkey);
+            if (data.hotkey) {
+              setHotkey(data.hotkey);
+              // Sync hotkey with Rust on startup/fetch
+              try {
+                await invoke("update_hotkey", { newHotkey: data.hotkey });
+              } catch (e) {
+                console.error("Failed to sync hotkey with Rust:", e);
+              }
+            }
             if (data.models) setModels(data.models);
             if (typeof data.model_index === "number") setSelectedModelIndex(data.model_index);
           }
