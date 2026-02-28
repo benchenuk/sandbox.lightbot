@@ -20,10 +20,37 @@ function App() {
     return "medium";
   });
   const [hotkey, setHotkey] = useState("Command+Shift+O");
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+      return "light";
+    }
+    return "dark";
+  });
   const [models, setModels] = useState<ModelConfig[]>([]);
+
+  // Apply theme class to root
+  useEffect(() => {
+    if (theme === "light") {
+      document.documentElement.classList.add("light");
+    } else {
+      document.documentElement.classList.remove("light");
+    }
+  }, [theme]);
+
+  // Listen for system theme changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
+    const handleChange = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? "light" : "dark");
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
   const [selectedModelIndex, setSelectedModelIndex] = useState(0);
   const { isReady, error, port: sidecarPort } = useSidecar();
-  
+
   // Multi-session state management
   const { sessions, activeSessionId, createSession, deleteSession, switchSession } = useChatSessions();
 
@@ -50,14 +77,14 @@ function App() {
   // Handle model selection change
   const handleModelChange = async (index: number) => {
     if (!sidecarPort || index === selectedModelIndex) return;
-    
+
     try {
       const response = await fetch(`http://127.0.0.1:${sidecarPort}/settings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model_index: index }),
       });
-      
+
       if (response.ok) {
         setSelectedModelIndex(index);
       } else {
@@ -183,10 +210,10 @@ function App() {
             </div>
           ) : (
             <ClipProvider>
-              <ChatWindow 
-                apiPort={sidecarPort} 
-                hotkey={hotkey} 
-                fontSize={fontSize} 
+              <ChatWindow
+                apiPort={sidecarPort}
+                hotkey={hotkey}
+                fontSize={fontSize}
                 sessionId={activeSessionId}
               />
             </ClipProvider>

@@ -190,7 +190,6 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-text-muted">
             <div className="text-3xl mb-3 opacity-30 font-mono">💡</div>
-            <p className="text-md font-medium">LightBot</p>
             <p className="text-xs mt-2 opacity-60">
               Press {displayHotkey} to toggle from anywhere
             </p>
