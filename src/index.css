@@ -14,50 +14,89 @@
   /* Transition */
   --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, shadow 0.3s ease;
 
-  /* Default Dark Theme */
-  --surface-bg: #1e1e1e;
-  --surface-secondary: #252526;
-  --surface-tertiary: #2d2d30;
-  --surface-hover: #3e3e42;
-  --surface-active: #3e74a8;
+  /* RGB Components for Tailwind opacity support */
+  --color-surface-bg: 30 30 30;
+  --color-surface-secondary: 37 37 38;
+  --color-surface-tertiary: 45 45 48;
+  --color-surface-hover: 62 62 66;
+  --color-surface-active: 62 116 168;
 
-  --text-primary: #cccccc;
-  --text-secondary: #9cdcfe;
-  --text-muted: #858585;
-  --text-disabled: #6e6e6e;
+  --color-text-primary: 204 204 204;
+  --color-text-secondary: 156 220 254;
+  --color-text-muted: 133 133 133;
+  --color-text-disabled: 110 110 110;
 
-  --border-primary: #3e3e42;
-  --border-subtle: #2d2d30;
-  --border-active: #007acc;
+  --color-border-primary: 62 62 66;
+  --color-border-subtle: 45 45 48;
+  --color-border-active: 0 122 204;
 
-  --accent-primary: #007acc;
-  --accent-hover: #1177bb;
-  --accent-subtle: #3e74a8;
+  --color-accent-primary: 0 122 204;
+  --color-accent-hover: 17 119 187;
+  --color-accent-subtle: 62 116 168;
 
-  --error: #f14c4c;
+  --color-error: 241 76 76;
+
+  /* Theme Variable Mapping */
+  --surface-bg: rgb(var(--color-surface-bg));
+  --surface-secondary: rgb(var(--color-surface-secondary));
+  --surface-tertiary: rgb(var(--color-surface-tertiary));
+  --surface-hover: rgb(var(--color-surface-hover));
+  --surface-active: rgb(var(--color-surface-active));
+  --text-primary: rgb(var(--color-text-primary));
+  --text-secondary: rgb(var(--color-text-secondary));
+  --text-muted: rgb(var(--color-text-muted));
+  --text-disabled: rgb(var(--color-text-disabled));
+  --border-primary: rgb(var(--color-border-primary));
+  --border-subtle: rgb(var(--color-border-subtle));
+  --border-active: rgb(var(--color-border-active));
+  --accent-primary: rgb(var(--color-accent-primary));
+  --accent-hover: rgb(var(--color-accent-hover));
+  --accent-subtle: rgb(var(--color-accent-subtle));
+  --error: rgb(var(--color-error));
 }
 
 :root.light {
-  --surface-bg: #ffffff;
-  --surface-secondary: #f3f3f3;
-  --surface-tertiary: #eeeeee;
-  --surface-hover: #e8e8e8;
-  --surface-active: #007acc;
+  --color-surface-bg: 255 255 255;
+  --color-surface-secondary: 243 243 243;
+  --color-surface-tertiary: 238 238 238;
+  --color-surface-hover: 232 232 232;
+  --color-surface-active: 0 122 204;
 
-  --text-primary: #333333;
-  --text-secondary: #005fb8;
-  --text-muted: #616161;
-  --text-disabled: #a6a6a6;
+  --color-text-primary: 51 51 51;
+  --color-text-secondary: 0 95 184;
+  --color-text-muted: 97 97 97;
+  --color-text-disabled: 166 166 166;
 
-  --border-primary: #dddddd;
-  --border-subtle: #e5e5e5;
-  --border-active: #007acc;
+  --color-border-primary: 221 221 221;
+  --color-border-subtle: 229 229 229;
+  --color-border-active: 0 122 204;
 
-  --accent-primary: #007acc;
-  --accent-hover: #005fb8;
-  --accent-subtle: #c2e0ff;
+  --color-accent-primary: 0 122 204;
+  --color-accent-hover: 0 95 184;
+  --color-accent-subtle: 194 224 255;
 
-  --error: #e51400;
+  --color-error: 229 20 0;
+
+  --surface-bg: rgb(var(--color-surface-bg));
+  --surface-secondary: rgb(var(--color-surface-secondary));
+  --surface-tertiary: rgb(var(--color-surface-tertiary));
+  --surface-hover: rgb(var(--color-surface-hover));
+  --surface-active: rgb(var(--color-surface-active));
+
+  --text-primary: rgb(var(--color-text-primary));
+  --text-secondary: rgb(var(--color-text-secondary));
+  --text-muted: rgb(var(--color-text-muted));
+  --text-disabled: rgb(var(--color-text-disabled));
+
+  --border-primary: rgb(var(--color-border-primary));
+  --border-subtle: rgb(var(--color-border-subtle));
+  --border-active: rgb(var(--color-border-active));
+
+  --accent-primary: rgb(var(--color-accent-primary));
+  --accent-hover: rgb(var(--color-accent-hover));
+  --accent-subtle: rgb(var(--color-accent-subtle));
+
+  --error: rgb(var(--color-error));
 }
 
 /* Font size presets */
