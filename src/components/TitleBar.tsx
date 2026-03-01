@@ -26,6 +26,7 @@ export default function TitleBar({
   models,
   selectedModelIndex,
   onModelChange,
+  apiPort,
 }: TitleBarProps) {
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
 
@@ -56,8 +57,8 @@ export default function TitleBar({
             onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
             disabled={!hasModels}
             className={`flex items-center gap-1 px-2 py-1 text-xs transition-colors rounded-md ${!hasModels
-                ? "text-text-disabled cursor-not-allowed"
-                : isModelDropdownOpen
+              ? "text-text-disabled cursor-not-allowed"
+              : isModelDropdownOpen
                 ? "text-accent bg-accent-subtle"
                 : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
               }`}
@@ -84,8 +85,8 @@ export default function TitleBar({
                     key={`${model.name}-${index}`}
                     onClick={() => handleModelSelect(index)}
                     className={`w-full text-left px-3 py-1.5 text-xs transition-colors truncate ${selectedModelIndex === index
-                        ? "text-accent bg-accent-subtle/50"
-                        : "text-text-primary hover:bg-surface-hover"
+                      ? "text-accent bg-accent-subtle/50"
+                      : "text-text-primary hover:bg-surface-hover"
                       }`}
                     title={model.name}
                   >
@@ -99,11 +100,12 @@ export default function TitleBar({
 
         <button
           onClick={onSettings}
+          disabled={apiPort === null}
           className={`p-1.5 transition-colors rounded-md ${showSettings
             ? "text-accent bg-accent-subtle"
             : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
-            }`}
-          title="Settings"
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+          title={apiPort === null ? "Loading ..." : "Settings"}
         >
           <Settings size={14} />
         </button>
