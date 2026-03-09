@@ -48,6 +48,20 @@ def write_toml(data: dict, file_path: Path) -> None:
         f.write("\n".join(lines) + "\n")
 
 
+def build_think_kwargs(param_path: str, value: bool) -> dict:
+    """Build a nested dictionary from a dot-notation path."""
+    keys = param_path.split(".")
+    result: dict = {}
+    node = result
+    for i, key in enumerate(keys):
+        if i == len(keys) - 1:
+            node[key] = value
+        else:
+            node[key] = {}
+            node = node[key]
+    return result
+
+
 # Configure logging
 logger = logging.getLogger("lightbot.engine")
 
@@ -180,8 +194,11 @@ class ChatEngine:
         self.api_key: str = (
             self.models[self.model_index].get("key", "").strip() if self.models else ""
         )
-        self.think: bool = (
-            self.models[self.model_index].get("think", True) if self.models else True
+        self.think: bool | None = (
+            self.models[self.model_index].get("think", None) if self.models else None
+        )
+        self.think_param: str | None = (
+            self.models[self.model_index].get("think_param", None) if self.models else None
         )
 
         # Fast model configuration
@@ -267,9 +284,15 @@ class ChatEngine:
         api_key = self.api_key or "dummy-key"
         try:
             llm_kwargs = {}
-            if self.base_url == "http://localhost:11434/v1":
-                llm_kwargs["additional_kwargs"] = {"think": False}
-                logger.info(f"Applying 'think=False' configuration for {self.model}")
+            if self.think is not None and self.think_param:
+                think_kwargs = build_think_kwargs(self.think_param, self.think)
+                # Merge into additional_kwargs
+                existing = llm_kwargs.get("additional_kwargs", {})
+                existing.update(think_kwargs)
+                llm_kwargs["additional_kwargs"] = existing
+                logger.info(
+                    f"[THINK] Reasoning {'ENABLED' if self.think else 'DISABLED'} "
+                )
 
             self.llm = OpenAILike(
                 model=self.model,
@@ -350,6 +373,12 @@ class ChatEngine:
         )
         return context
 
+    def _log_thinking_detected(self, content: str):
+        """Log whether a <think> tag was detected in the response."""
+        has_think = "<think>" in content
+        if has_think:
+            logger.info("[THINK] Thinking tag detected")
+
     async def chat(
         self, message: str, session_id: str | None = None, search_mode: str = "off"
     ) -> str:
@@ -387,6 +416,7 @@ class ChatEngine:
         response = await self.llm.achat(messages)
         logger.info("[EVENT] LLM API call completed")
         content = response.message.content or ""
+        self._log_thinking_detected(content)
 
         # Store in memory
         self._memory[sid].append(ChatMessage(role=MessageRole.USER, content=message))
@@ -440,9 +470,11 @@ class ChatEngine:
         logger.info("[EVENT] LLM API call completed (streaming)")
 
         # Store in memory after streaming completes
+        full_content = "".join(full_response)
+        self._log_thinking_detected(full_content)
         self._memory[sid].append(ChatMessage(role=MessageRole.USER, content=message))
         self._memory[sid].append(
-            ChatMessage(role=MessageRole.ASSISTANT, content="".join(full_response))
+            ChatMessage(role=MessageRole.ASSISTANT, content=full_content)
         )
 
     def clear_memory(self, session_id: str | None = None):
@@ -492,7 +524,8 @@ class ChatEngine:
                 self.model = self.models[self.model_index].get("name", "")
                 self.base_url = self.models[self.model_index].get("url", "")
                 self.api_key = self.models[self.model_index].get("key", "").strip()
-                self.think = self.models[self.model_index].get("think", True)
+                self.think = self.models[self.model_index].get("think", None)
+                self.think_param = self.models[self.model_index].get("think_param", None)
             reinitialize = True
 
         if "model_index" in settings:
@@ -503,7 +536,8 @@ class ChatEngine:
                 self.model = self.models[self.model_index].get("name", "")
                 self.base_url = self.models[self.model_index].get("url", "")
                 self.api_key = self.models[self.model_index].get("key", "").strip()
-                self.think = self.models[self.model_index].get("think", True)
+                self.think = self.models[self.model_index].get("think", None)
+                self.think_param = self.models[self.model_index].get("think_param", None)
                 reinitialize = True
 
         if "fast_models" in settings:
