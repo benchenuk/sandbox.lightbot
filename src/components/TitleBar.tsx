@@ -136,7 +136,7 @@ export default function TitleBar({
           onClick={onSettings}
           disabled={apiPort === null}
           className={`p-1.5 transition-colors rounded-md ${showSettings
-            ? "text-accent bg-accent-subtle"
+            ? "text-white bg-accent"
             : "text-text-muted hover:text-text-primary hover:bg-surface-hover"
             } disabled:opacity-40 disabled:cursor-not-allowed`}
           title={apiPort === null ? "Loading ..." : "Settings"}

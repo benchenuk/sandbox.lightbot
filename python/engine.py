@@ -228,6 +228,7 @@ class ChatEngine:
         self.clippings_path: str = settings.get(
             "clippings_path", "~/.lightbot/clippings"
         )
+        self.retain_thinking: bool = settings.get("retain_thinking", True)
 
         # Ephemeral memory: session_id -> list of messages
         self._memory: dict[str, list[ChatMessage]] = defaultdict(list)
@@ -505,6 +506,7 @@ class ChatEngine:
             "search_url": settings.get("search_url", ""),
             "hotkey": settings.get("hotkey", "Command+Shift+O"),
             "clippings_path": settings.get("clippings_path", "clippings"),
+            "retain_thinking": settings.get("retain_thinking", True),
         }
 
     def update_settings(self, settings: dict):
@@ -599,6 +601,18 @@ class ChatEngine:
         if "clippings_path" in settings:
             self.clippings_path = settings["clippings_path"]
             config["settings"]["clippings_path"] = settings["clippings_path"]
+
+        if "show_thinking" in settings:
+            self.display_reasoning = settings["show_thinking"]
+            config["settings"]["display_reasoning"] = settings["show_thinking"]
+
+        if "display_reasoning" in settings:
+            self.retain_thinking = settings["display_reasoning"]
+            config["settings"]["retain_thinking"] = settings["display_reasoning"]
+
+        if "retain_thinking" in settings:
+            self.retain_thinking = settings["retain_thinking"]
+            config["settings"]["retain_thinking"] = settings["retain_thinking"]
 
         # Save config
         self.config_manager.save(config)

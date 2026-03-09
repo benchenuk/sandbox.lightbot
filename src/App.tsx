@@ -28,6 +28,7 @@ function App() {
     return "dark";
   });
   const [models, setModels] = useState<ModelConfig[]>([]);
+  const [retainThinking, setRetainThinking] = useState(true);
 
   // Apply theme class to root
   useEffect(() => {
@@ -72,6 +73,7 @@ function App() {
           }
           if (data.models) setModels(data.models);
           if (typeof data.model_index === "number") setSelectedModelIndex(data.model_index);
+          if (typeof data.retain_thinking === "boolean") setRetainThinking(data.retain_thinking);
         }
       } catch (err) {
         console.error("Failed to fetch settings:", err);
@@ -258,6 +260,7 @@ function App() {
                 hotkey={hotkey}
                 fontSize={fontSize}
                 sessionId={activeSessionId}
+                retainThinking={retainThinking}
               />
             </ClipProvider>
           )}

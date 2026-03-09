@@ -13,20 +13,17 @@ selected_index = 0
 # Primary models for chat responses
 # Add as many models as you need - each model has name, url, and key
 [[models.list]]
-name = "gpt-4"
-url = "https://api.openai.com/v1"
-key = "sk-your-openai-api-key-here"
-
-[[models.list]]
-name = "llama3.1"
+name = "deepseek-r1"
 url = "http://localhost:11434/v1"
-key = ""  # Empty for local models without authentication
-think = false # Set to false for models that don't support it or if you want to skip it
+key = "ollama"
+think = true  # Request thinking/reasoning from the provider
+think_param = "think" # JSON path for the toggle (e.g. "think", "extra_body.chat_template_kwargs.enable_thinking")
 
 [[models.list]]
 name = "claude-3-5-sonnet"
 url = "https://api.anthropic.com/v1"
 key = "sk-ant-api03-your-anthropic-key"
+think = false # Explicitly disable for models that don't support it
 
 # =============================================================================
 # FAST MODELS CONFIGURATION
@@ -76,15 +73,25 @@ hotkey = "Command+Shift+O"
 # Use absolute path or ~/ for home directory
 clippings_path = "~/.lightbot/clippings"
 
+# Whether to keep/display reasoning content (from <think> tags) in chat 
+# If false, reasoning is shown as a subtle brain icon in the header only
+retain_thinking = true
+
 # =============================================================================
 # CONFIGURATION NOTES
 # =============================================================================
 #
 # 1. Model Configuration:
 #    - Each model needs: name (model identifier), url (API base URL), key (API key)
-#    - think: (boolean) Set to false to send "think": false to the provider (useful for Ollama/DeepSeek)
+#    - think: (boolean) Whether to request reasoning/thinking from the model
+#    - think_param: (string) Dot-notation path for the JSON payload toggle
+#      Examples: "think", "extra_body.chat_template_kwargs.enable_thinking"
 #    - For local models (Ollama, etc.), leave key as empty string ""
 #    - selected_index points to which model is currently active (0 = first)
+#
+# 2. Reasoning (Thinking) Display:
+#    - retain_thinking: (boolean) If true, shows reasoning in a dedicated block.
+#      If false, only shows a brain icon in the message header to indicate reasoning occurred.
 #
 # 2. Multiple Models:
 #    - Add multiple [[models.list]] or [[fast_models.list]] entries

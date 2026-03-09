@@ -20,6 +20,7 @@ interface Settings {
   hotkey: string;
   systemPrompt: string;
   clippingsPath: string;
+  retainThinking: boolean;
 }
 
 const emptySettings: Settings = {
@@ -32,6 +33,7 @@ const emptySettings: Settings = {
   hotkey: "Command+Shift+O",
   systemPrompt: "",
   clippingsPath: "~/.lightbot/clippings",
+  retainThinking: true,
 };
 
 export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, apiPort, onRefresh }: SettingsPanelProps) {
@@ -66,6 +68,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
           hotkey: backendSettings.hotkey || "Command+Shift+O",
           systemPrompt: backendSettings.system_prompt || "",
           clippingsPath: backendSettings.clippings_path || "clippings",
+          retainThinking: backendSettings.retain_thinking !== undefined ? backendSettings.retain_thinking : true,
         });
         setInitialHotkey(backendSettings.hotkey || "Command+Shift+O");
         setError(null);
@@ -97,6 +100,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
         search_url: settings.searchUrl,
         hotkey: settings.hotkey,
         clippings_path: settings.clippingsPath,
+        retain_thinking: settings.retainThinking,
       };
 
       const response = await fetch(`http://127.0.0.1:${apiPort}/settings`, {
@@ -246,6 +250,24 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
                 <p className="text-text-disabled text-xs mt-1">
                   Absolute path or relative to project root
                 </p>
+              </div>
+
+              <div className="pt-2 border-t border-border-subtle/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-text-primary">Retain Reasoning</div>
+                    <div className="text-xs text-text-muted">Keep AI's reasoning process in history</div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={settings.retainThinking}
+                      onChange={(e) => updateSetting("retainThinking", e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-surface-tertiary rounded-full peer peer-checked:bg-accent after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-muted after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4 peer-checked:after:bg-white group-hover:after:bg-text-secondary"></div>
+                  </label>
+                </div>
               </div>
             </div>
 

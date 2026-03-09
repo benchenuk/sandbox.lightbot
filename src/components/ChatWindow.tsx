@@ -26,12 +26,13 @@ interface ChatWindowProps {
   hotkey: string;
   fontSize?: "small" | "medium" | "large";
   sessionId?: string;
+  retainThinking?: boolean;
 }
 
 // Threshold in pixels for considering the user at the bottom
 const SCROLL_BOTTOM_THRESHOLD = 50;
 
-export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessionId }: ChatWindowProps) {
+export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessionId, retainThinking = true }: ChatWindowProps) {
   const [searchMode, setSearchMode] = useState<SearchMode>("off");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -216,6 +217,7 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
               searchQuery={isSearchOpen ? chatSearchQuery : ""}
               apiPort={apiPort}
               sessionId={sessionId}
+              retainThinking={retainThinking}
             />
           ))
         )}
