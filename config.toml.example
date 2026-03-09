@@ -19,8 +19,9 @@ key = "sk-your-openai-api-key-here"
 
 [[models.list]]
 name = "llama3.1"
-url = "http://localhost:11434"
+url = "http://localhost:11434/v1"
 key = ""  # Empty for local models without authentication
+think = false # Set to false for models that don't support it or if you want to skip it
 
 [[models.list]]
 name = "claude-3-5-sonnet"
@@ -81,6 +82,7 @@ clippings_path = "~/.lightbot/clippings"
 #
 # 1. Model Configuration:
 #    - Each model needs: name (model identifier), url (API base URL), key (API key)
+#    - think: (boolean) Set to false to send "think": false to the provider (useful for Ollama/DeepSeek)
 #    - For local models (Ollama, etc.), leave key as empty string ""
 #    - selected_index points to which model is currently active (0 = first)
 #

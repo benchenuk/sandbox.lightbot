@@ -180,6 +180,9 @@ class ChatEngine:
         self.api_key: str = (
             self.models[self.model_index].get("key", "").strip() if self.models else ""
         )
+        self.think: bool = (
+            self.models[self.model_index].get("think", True) if self.models else True
+        )
 
         # Fast model configuration
         self.fast_model: str = (
@@ -263,17 +266,25 @@ class ChatEngine:
 
         api_key = self.api_key or "dummy-key"
         try:
+            llm_kwargs = {}
+            if self.base_url == "http://localhost:11434/v1":
+                llm_kwargs["additional_kwargs"] = {"think": False}
+                logger.info(f"Applying 'think=False' configuration for {self.model}")
+
             self.llm = OpenAILike(
                 model=self.model,
                 api_key=api_key,
                 api_base=self.base_url,
                 is_chat_model=True,
                 timeout=60.0,
+                **llm_kwargs
             )
+
             # Use fast model's own config, fallback to primary model's config
             fast_api_key = self.fast_api_key or api_key
             fast_base_url = self.fast_base_url or self.base_url
             fast_model_name = self.fast_model or self.model
+            
             self.fast_llm = OpenAILike(
                 model=fast_model_name,
                 api_key=fast_api_key,
@@ -481,6 +492,7 @@ class ChatEngine:
                 self.model = self.models[self.model_index].get("name", "")
                 self.base_url = self.models[self.model_index].get("url", "")
                 self.api_key = self.models[self.model_index].get("key", "").strip()
+                self.think = self.models[self.model_index].get("think", True)
             reinitialize = True
 
         if "model_index" in settings:
@@ -491,6 +503,7 @@ class ChatEngine:
                 self.model = self.models[self.model_index].get("name", "")
                 self.base_url = self.models[self.model_index].get("url", "")
                 self.api_key = self.models[self.model_index].get("key", "").strip()
+                self.think = self.models[self.model_index].get("think", True)
                 reinitialize = True
 
         if "fast_models" in settings:
