@@ -15,6 +15,7 @@ A fast, lightweight AI assistant. Quick setup to chat with any OpenAI-compatible
 - 🔔 **System Tray**: Runs in background with menubar access
 - 📑 **Multi-Tab**: Multiple concurrent chat sessions
 - 📋 **Clipping**: Export answers to markdown files
+- 🧠 **Thinking Support**: Support for toggling thinking of model
 
 ## Architecture
 
@@ -193,6 +194,7 @@ Configuration is managed via environment variables (in `.env`) and includes:
 - **Base URL**: OpenAI-compatible API endpoint
 - **API Key**: Authentication key
 - **Search Provider**: DDGS or SearXNG
+- **Retain Thinking**: Toggle whether to show full reasoning content
 - **Global Hotkey**: Configurable keyboard shortcut
 - **System Prompt**: Customizable AI behavior
 
