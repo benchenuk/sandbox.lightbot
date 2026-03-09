@@ -152,9 +152,6 @@ export default function MessageItem({ message, searchQuery = "", apiPort, sessio
             {isUser ? <User size={14} /> : <Sparkles size={14} />}
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-semibold uppercase tracking-wider opacity-80 ${isUser ? "text-text-secondary" : "text-accent"}`}>
-              {isUser ? "User" : "System"}
-            </span>
             <span className="text-text-disabled text-xs font-mono">
               {message.timestamp.toLocaleTimeString([], {
                 hour: "2-digit",

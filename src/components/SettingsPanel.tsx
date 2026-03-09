@@ -178,14 +178,15 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-border-subtle">
+      {/* Tabs */}
+      <div className="flex border-b border-border-subtle bg-surface/30">
         {(["llm", "search", "general"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 text-xs uppercase tracking-wide transition-colors border-b-2 rounded-t-md ${activeTab === tab
-              ? "text-text-primary border-accent bg-surface-tertiary"
-              : "text-text-muted border-transparent hover:text-text-primary hover:bg-surface-hover"
+            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-[0.1em] transition-all border-b-2 ${activeTab === tab
+              ? "text-accent border-accent bg-accent/5"
+              : "text-text-disabled border-transparent hover:text-text-muted hover:bg-surface-hover"
               }`}
           >
             {tab}
@@ -193,108 +194,99 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
         ))}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
         {activeTab === "general" && (
-          <div className="flex flex-col h-full">
-            <div className="space-y-3">
+          <div className="flex flex-col h-full space-y-4">
+            {/* Font Size */}
+            <div className="space-y-2">
               <div>
-                <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
-                  Font Size
-                </label>
-                <div className="flex gap-1">
-                  {(["small", "medium", "large"] as const).map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => onFontSizeChange(size)}
-                      className={`flex-1 py-1.5 text-xs capitalize border transition-colors rounded-md ${fontSize === size
-                        ? "border-accent bg-accent-subtle text-text-primary"
-                        : "border-border-primary text-text-muted hover:text-text-primary hover:bg-surface-hover"
-                        }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
+                <label className="block text-text-disabled text-[10px] font-bold uppercase tracking-wider mb-0.5">Font Size</label>
+                <div className="text-xs text-text-muted">Adjust message scale for better readability</div>
               </div>
-
-              <div>
-                <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
-                  Global Hotkey
-                </label>
-                <input
-                  type="text"
-                  value={settings.hotkey}
-                  onChange={(e) => updateSetting("hotkey", e.target.value)}
-                  className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
-                           text-text-primary text-sm focus:outline-none focus:border-accent"
-                  placeholder="e.g., Command+Shift+O"
-                />
-                <p className="text-text-disabled text-xs mt-1">
-                  Format: Command+Shift+O, Ctrl+Alt+Space, etc.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
-                  Clippings Folder
-                </label>
-                <input
-                  type="text"
-                  value={settings.clippingsPath}
-                  onChange={(e) => updateSetting("clippingsPath", e.target.value)}
-                  className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
-                           text-text-primary text-sm focus:outline-none focus:border-accent"
-                  placeholder="clippings"
-                />
-                <p className="text-text-disabled text-xs mt-1">
-                  Absolute path or relative to project root
-                </p>
-              </div>
-
-              <div className="pt-2 border-t border-border-subtle/50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-text-primary">Retain Reasoning</div>
-                    <div className="text-xs text-text-muted">Keep AI's reasoning process in history</div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={settings.retainThinking}
-                      onChange={(e) => updateSetting("retainThinking", e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-surface-tertiary rounded-full peer peer-checked:bg-accent after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-muted after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4 peer-checked:after:bg-white group-hover:after:bg-text-secondary"></div>
-                  </label>
-                </div>
+              <div className="flex gap-1">
+                {(["small", "medium", "large"] as const).map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => onFontSizeChange(size)}
+                    className={`flex-1 py-1.5 text-xs capitalize border transition-colors rounded-md ${fontSize === size
+                      ? "border-accent bg-accent/5 text-accent"
+                      : "border-border-subtle text-text-muted hover:text-text-primary hover:bg-surface-hover"
+                      }`}
+                  >
+                    {size}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Build Info - at bottom of General tab */}
-            <div className="mt-auto pt-4 border-t border-border-subtle/30">
-              <div className="flex items-center opacity-40 hover:opacity-100 transition-opacity">
-                <span className="text-[10px] text-text-muted font-mono tracking-tighter uppercase">
-                  BUILD: {__APP_BUILD_ID__}
-                </span>
+            {/* Retain Thinking */}
+            <div className="pt-3 border-t border-border-subtle/30">
+              <label className="block text-text-disabled text-[10px] font-bold uppercase tracking-wider mb-0.5">Retain Thinking</label>
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-text-muted">Keep model reasoning in chat history</div>
+                <label className="relative inline-flex items-center cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={settings.retainThinking}
+                    onChange={(e) => updateSetting("retainThinking", e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-surface-tertiary rounded-full peer peer-checked:bg-accent after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-text-muted after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4 peer-checked:after:bg-white group-hover:after:bg-text-secondary"></div>
+                </label>
               </div>
+            </div>
+
+            {/* Global Hotkey */}
+            <div className="pt-3 border-t border-border-subtle/30 space-y-2">
+              <div>
+                <label className="block text-text-disabled text-[10px] font-bold uppercase tracking-wider mb-0.5">Global Hotkey</label>
+                <div className="text-xs text-text-muted">Toggle the application window (e.g. Cmd+Shift+O)</div>
+              </div>
+              <input
+                type="text"
+                value={settings.hotkey}
+                onChange={(e) => updateSetting("hotkey", e.target.value)}
+                className="w-full px-3 py-1.5 bg-surface border border-border-subtle rounded-lg
+                         text-text-primary text-sm focus:outline-none focus:border-accent/30"
+                placeholder="Command+Shift+O"
+              />
+            </div>
+
+            {/* Clippings Folder */}
+            <div className="pt-3 border-t border-border-subtle/30 space-y-2">
+              <div>
+                <label className="block text-text-disabled text-[10px] font-bold uppercase tracking-wider mb-0.5">Clippings Folder</label>
+                <div className="text-xs text-text-muted truncate">Local storage relative to root</div>
+              </div>
+              <input
+                type="text"
+                value={settings.clippingsPath}
+                onChange={(e) => updateSetting("clippingsPath", e.target.value)}
+                className="w-full px-3 py-1.5 bg-surface border border-border-subtle rounded-lg
+                         text-text-primary text-sm focus:outline-none focus:border-accent/30"
+                placeholder="clippings"
+              />
+            </div>
+
+            {/* Build Info */}
+            <div className="mt-auto pt-4 border-t border-border-subtle/30">
+              <span className="text-[10px] font-mono text-text-disabled uppercase tracking-tighter opacity-50">
+                BUILD: {__APP_BUILD_ID__}
+              </span>
             </div>
           </div>
         )}
 
         {activeTab === "llm" && (
-          <div className="flex flex-col h-full min-h-0">
-            {/* Model sections - scrollable */}
-            <div className="flex-shrink-0 space-y-4 pb-4">
-              {/* Models Section */}
+          <div className="flex flex-col h-full min-h-0 space-y-5">
+            <div className="flex-shrink-0 space-y-5">
               <ModelConfigEditor
                 title="Models"
                 models={settings.models}
                 selectedIndex={settings.modelIndex}
                 onModelsChange={handleModelsChange}
               />
-
-              {/* Fast Models Section */}
               <ModelConfigEditor
                 title="Fast Models"
                 models={settings.fastModels}
@@ -303,68 +295,63 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
               />
             </div>
 
-            {/* System Prompt - Takes remaining space */}
-            <div className="flex-1 min-h-0 border-t border-border-subtle pt-4 flex flex-col">
-              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5 flex-shrink-0">
+            <div className="flex-1 min-h-0 pt-4 border-t border-border-subtle/30 flex flex-col space-y-2">
+              <label className="block text-text-disabled text-[10px] font-bold uppercase tracking-wider">
                 System Prompt
               </label>
               <textarea
                 value={settings.systemPrompt}
                 onChange={(e) => updateSetting("systemPrompt", e.target.value)}
-                className="flex-1 min-h-0 w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
-                         text-text-primary text-sm focus:outline-none focus:border-accent font-sans resize-none"
+                className="flex-1 min-h-[100px] w-full px-3 py-2 bg-surface border border-border-subtle rounded-lg
+                           text-text-primary text-sm focus:outline-none focus:border-accent/50 font-sans resize-none"
+                placeholder="Enter system instructions..."
               />
             </div>
           </div>
         )}
 
         {activeTab === "search" && (
-          <>
-            <div>
-              <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label className="block text-text-disabled text-[10px] font-bold uppercase tracking-wider">
                 Search Provider
               </label>
               <select
                 value={settings.searchProvider}
-                onChange={(e) =>
-                  updateSetting(
-                    "searchProvider",
-                    e.target.value as Settings["searchProvider"]
-                  )
-                }
-                className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
-                         text-text-primary text-sm focus:outline-none focus:border-accent"
+                onChange={(e) => updateSetting("searchProvider", e.target.value as Settings["searchProvider"])}
+                className="w-full px-3 py-2 bg-surface border border-border-subtle rounded-lg
+                           text-text-primary text-sm focus:outline-none focus:border-accent/50"
               >
-                <option value="ddgs">DDGS</option>
-                <option value="searxng">SearXNG</option>
+                <option value="ddgs">DuckDuckGo (DDGS)</option>
+                <option value="searxng">SearXNG (Self-hosted)</option>
               </select>
             </div>
 
             {settings.searchProvider === "searxng" && (
-              <div>
-                <label className="block text-text-muted text-xs uppercase tracking-wide mb-1.5">
+              <div className="pt-4 border-t border-border-subtle/30 space-y-2">
+                <label className="block text-text-disabled text-[10px] font-bold uppercase tracking-wider">
                   SearXNG Instance URL
                 </label>
                 <input
                   type="text"
                   value={settings.searchUrl}
                   onChange={(e) => updateSetting("searchUrl", e.target.value)}
-                  className="w-full px-2 py-1.5 bg-surface border border-border-subtle rounded-md
-                           text-text-primary text-sm focus:outline-none focus:border-accent"
-                  placeholder="http://localhost:8080"
+                  className="w-full px-3 py-2 bg-surface border border-border-subtle rounded-lg
+                             text-text-primary text-sm focus:outline-none focus:border-accent/50"
+                  placeholder="https://search.example.com"
                 />
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t border-border-subtle">
+      <div className="p-4 border-t border-border-subtle bg-surface/30">
         <button
           onClick={handleSave}
-          className="w-full py-1.5 bg-accent text-white text-sm rounded-md
-                     hover:bg-accent-hover transition-colors font-medium"
+          className="w-full py-2 bg-accent text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-lg
+                     hover:bg-accent-hover active:scale-[0.98] transition-all shadow-lg shadow-accent/20"
         >
           Save Settings
         </button>
