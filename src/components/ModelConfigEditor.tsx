@@ -5,6 +5,7 @@ export interface ModelConfig {
   name: string;
   url: string;
   key: string;
+  think?: boolean;
 }
 
 interface ModelConfigEditorProps {
@@ -116,7 +117,6 @@ function ModelItem({
             />
           </div>
 
-          {/* Delete button in expanded content */}
           <div className="pt-2 flex justify-end">
             {!showDeleteConfirm ? (
               <button

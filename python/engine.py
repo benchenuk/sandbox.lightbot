@@ -17,10 +17,10 @@ def write_toml(data: dict, file_path: Path) -> None:
     def write_value(val, indent=0):
         if isinstance(val, str):
             return f'"{val}"'
-        elif isinstance(val, int):
-            return str(val)
         elif isinstance(val, bool):
             return "true" if val else "false"
+        elif isinstance(val, int):
+            return str(val)
         elif isinstance(val, list):
             return "[" + ", ".join(write_value(v) for v in val) + "]"
         return str(val)

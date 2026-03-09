@@ -7,6 +7,7 @@ interface SettingsPanelProps {
   fontSize: "small" | "medium" | "large";
   onFontSizeChange: (size: "small" | "medium" | "large") => void;
   apiPort: number | null;
+  onRefresh?: () => void;
 }
 
 interface Settings {
@@ -33,7 +34,7 @@ const emptySettings: Settings = {
   clippingsPath: "~/.lightbot/clippings",
 };
 
-export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, apiPort }: SettingsPanelProps) {
+export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, apiPort, onRefresh }: SettingsPanelProps) {
   const [settings, setSettings] = useState<Settings>(emptySettings);
   const [initialHotkey, setInitialHotkey] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"general" | "llm" | "search">("llm");
@@ -118,6 +119,7 @@ export default function SettingsPanel({ onClose, fontSize, onFontSizeChange, api
       }
 
       setError(null);
+      onRefresh?.();
       onClose();
     } catch (err) {
       setError("Failed to save settings to backend");

@@ -55,31 +55,32 @@ function App() {
   // Multi-session state management
   const { sessions, activeSessionId, createSession, deleteSession, switchSession } = useChatSessions();
 
+  const fetchSettings = async () => {
+    if (sidecarPort) {
+      try {
+        const response = await fetch(`http://127.0.0.1:${sidecarPort}/settings`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.hotkey) {
+            setHotkey(data.hotkey);
+            // Sync hotkey with Rust on startup/fetch
+            try {
+              await invoke("update_hotkey", { newHotkey: data.hotkey });
+            } catch (e) {
+              console.error("Failed to sync hotkey with Rust:", e);
+            }
+          }
+          if (data.models) setModels(data.models);
+          if (typeof data.model_index === "number") setSelectedModelIndex(data.model_index);
+        }
+      } catch (err) {
+        console.error("Failed to fetch settings:", err);
+      }
+    }
+  };
+
   // Fetch settings from backend
   useEffect(() => {
-    const fetchSettings = async () => {
-      if (sidecarPort) {
-        try {
-          const response = await fetch(`http://127.0.0.1:${sidecarPort}/settings`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.hotkey) {
-              setHotkey(data.hotkey);
-              // Sync hotkey with Rust on startup/fetch
-              try {
-                await invoke("update_hotkey", { newHotkey: data.hotkey });
-              } catch (e) {
-                console.error("Failed to sync hotkey with Rust:", e);
-              }
-            }
-            if (data.models) setModels(data.models);
-            if (typeof data.model_index === "number") setSelectedModelIndex(data.model_index);
-          }
-        } catch (err) {
-          console.error("Failed to fetch settings:", err);
-        }
-      }
-    };
     fetchSettings();
   }, [sidecarPort]);
 
@@ -101,6 +102,38 @@ function App() {
       }
     } catch (err) {
       console.error("Error updating model:", err);
+    }
+  };
+
+  // Handle reasoning toggle for the current model
+  const handleToggleThink = async () => {
+    if (!sidecarPort || !models[selectedModelIndex]) return;
+
+    const updatedModels = [...models];
+    const currentModel = updatedModels[selectedModelIndex];
+
+    // Toggle between true and false (only if already defined/unhidden)
+    const nextThink = currentModel.think === false ? true : false;
+
+    updatedModels[selectedModelIndex] = {
+      ...currentModel,
+      think: nextThink
+    };
+
+    try {
+      const response = await fetch(`http://127.0.0.1:${sidecarPort}/settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ models: updatedModels }),
+      });
+
+      if (response.ok) {
+        setModels(updatedModels);
+      } else {
+        console.error("Failed to update reasoning setting");
+      }
+    } catch (err) {
+      console.error("Error toggling reasoning:", err);
     }
   };
 
@@ -183,6 +216,7 @@ function App() {
         models={models}
         selectedModelIndex={selectedModelIndex}
         onModelChange={handleModelChange}
+        onToggleThink={handleToggleThink}
         apiPort={sidecarPort}
       />
 
@@ -237,6 +271,7 @@ function App() {
               fontSize={fontSize}
               onFontSizeChange={setFontSize}
               apiPort={sidecarPort}
+              onRefresh={fetchSettings}
             />
           </div>
         )}
