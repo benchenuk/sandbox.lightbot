@@ -146,7 +146,7 @@ export default function MessageItem({ message, searchQuery = "", apiPort, sessio
       className={`group border-b border-border-subtle ${isUser ? 'bg-surface' : 'bg-surface-secondary/50'
         }`}
     >
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border-subtle/30">
+      <div className="flex items-center justify-between px-4 pt-3">
         <div className="flex items-center gap-3">
           <div className={`p-1 rounded ${isUser ? "bg-surface-tertiary text-text-secondary" : "bg-accent/10 text-accent"}`}>
             {isUser ? <User size={14} /> : <Sparkles size={14} />}
@@ -193,7 +193,7 @@ export default function MessageItem({ message, searchQuery = "", apiPort, sessio
       </div>
 
       {/* Content */}
-      <div className="px-4 py-3">
+      <div className="px-4 pt-1 pb-2">
         {isUser ? (
           <p className="text-text-primary text-base leading-relaxed whitespace-pre-wrap">
             {renderUserContent()}
