@@ -261,6 +261,7 @@ function App() {
                 fontSize={fontSize}
                 sessionId={activeSessionId}
                 retainThinking={retainThinking}
+                currentModel={models[selectedModelIndex]}
               />
             </ClipProvider>
           )}

@@ -158,6 +158,11 @@ export default function MessageItem({ message, searchQuery = "", apiPort, sessio
                 minute: "2-digit",
               })}
             </span>
+            {message.model && (
+              <span className="text-[8px] px-2 py-0.5 border border-border-subtle rounded-md bg-surface-tertiary/50 text-text-muted font-medium uppercase tracking-tighter shrink-0">
+                {message.model}
+              </span>
+            )}
 
             {/* Thinking Indicator in Header */}
             {!isUser && hasThinking && (

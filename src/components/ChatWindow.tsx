@@ -27,12 +27,13 @@ interface ChatWindowProps {
   fontSize?: "small" | "medium" | "large";
   sessionId?: string;
   retainThinking?: boolean;
+  currentModel?: { name: string; alias?: string };
 }
 
 // Threshold in pixels for considering the user at the bottom
 const SCROLL_BOTTOM_THRESHOLD = 50;
 
-export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessionId, retainThinking = true }: ChatWindowProps) {
+export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessionId, retainThinking = true, currentModel }: ChatWindowProps) {
   const [searchMode, setSearchMode] = useState<SearchMode>("off");
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -41,7 +42,7 @@ export default function ChatWindow({ apiPort, hotkey, fontSize = "medium", sessi
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { messages, isStreaming, error, sendMessage, stopStreaming, clearMessages } =
-    useChat({ apiPort, searchMode, sessionId });
+    useChat({ apiPort, searchMode, sessionId, currentModel });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);

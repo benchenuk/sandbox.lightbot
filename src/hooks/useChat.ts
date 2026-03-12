@@ -5,6 +5,7 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  model?: string;
 }
 
 export type SearchMode = "off" | "on" | "auto";
@@ -13,9 +14,10 @@ interface UseChatOptions {
   apiPort: number | null;
   sessionId?: string;
   searchMode?: SearchMode;
+  currentModel?: { name: string; alias?: string };
 }
 
-export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: UseChatOptions) {
+export function useChat({ apiPort, sessionId = "default", searchMode = "off", currentModel }: UseChatOptions) {
   // Use a ref to store messages for all sessions
   const messagesMapRef = useRef<Map<string, Message[]>>(new Map());
   
@@ -100,7 +102,9 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
           role: "assistant",
           content: "",
           timestamp: new Date(),
+          model: currentModel?.alias || currentModel?.name,
         };
+        console.log("[useChat] Creating assistant message with model:", assistantMessage.model);
         
         // Add assistant placeholder to originating session
         const messagesWithAssistant = [...messagesWithUser, assistantMessage];
@@ -147,7 +151,7 @@ export function useChat({ apiPort, sessionId = "default", searchMode = "off" }: 
         abortControllerRef.current = null;
       }
     },
-    [apiPort, sessionId, searchMode]
+    [apiPort, sessionId, searchMode, currentModel]
   );
 
   const stopStreaming = useCallback(() => {
