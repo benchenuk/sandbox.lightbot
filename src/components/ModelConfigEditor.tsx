@@ -6,6 +6,7 @@ export interface ModelConfig {
   url: string;
   key: string;
   think?: boolean;
+  alias?: string;
 }
 
 interface ModelConfigEditorProps {
@@ -63,7 +64,7 @@ function ModelItem({
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <ChevronDown size={14} className="text-text-muted shrink-0" />
             <span className="text-text-primary text-xs truncate">
-              {model.name || "Unnamed Model"}
+              {model.alias || model.name || "Unnamed Model"}
             </span>
             {isSelected && (
               <span className="text-[10px] px-1.5 py-0.5 bg-accent/20 text-accent rounded shrink-0">
@@ -86,6 +87,20 @@ function ModelItem({
               onBlur={handleUpdate}
               className="w-full px-2 py-1 bg-surface border border-border-subtle rounded text-text-primary text-xs focus:outline-none focus:border-accent"
               placeholder="Model name (e.g., gpt-4)"
+            />
+          </div>
+
+          <div>
+            <label className="block text-text-muted text-[10px] uppercase tracking-wide mb-1">
+              Alias
+            </label>
+            <input
+              type="text"
+              value={editModel.alias || ""}
+              onChange={(e) => setEditModel({ ...editModel, alias: e.target.value })}
+              onBlur={handleUpdate}
+              className="w-full px-2 py-1 bg-surface border border-border-subtle rounded text-text-primary text-xs focus:outline-none focus:border-accent"
+              placeholder="Display name (e.g., GPT-4)"
             />
           </div>
 
@@ -138,7 +153,7 @@ function ModelItem({
                   onClick={handleConfirmDelete}
                   className="px-2 py-1 text-xs text-error hover:bg-error/10 rounded transition-colors"
                 >
-                  Delete
+                  Confirm
                 </button>
               </div>
             )}
@@ -157,7 +172,7 @@ function ModelItem({
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <ChevronRight size={14} className="text-text-muted shrink-0" />
         <span className="text-text-primary text-xs truncate">
-          {model.name || "Unnamed Model"}
+          {model.alias || model.name || "Unnamed Model"}
         </span>
         {isSelected && (
           <span className="text-[10px] px-1.5 py-0.5 bg-accent/20 text-accent rounded shrink-0">
@@ -321,6 +336,19 @@ export default function ModelConfigEditor({
               onChange={(e) => setNewModel({ ...newModel, key: e.target.value })}
               className="w-full px-2 py-1 bg-surface-secondary border border-border-subtle rounded text-text-primary text-xs focus:outline-none focus:border-accent"
               placeholder="sk-..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-text-muted text-[10px] uppercase tracking-wide mb-1">
+              Alias
+            </label>
+            <input
+              type="text"
+              value={newModel.alias || ""}
+              onChange={(e) => setNewModel({ ...newModel, alias: e.target.value })}
+              className="w-full px-2 py-1 bg-surface-secondary border border-border-subtle rounded text-text-primary text-xs focus:outline-none focus:border-accent"
+              placeholder="Display name (e.g., GPT-4)"
             />
           </div>
         </div>

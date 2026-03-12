@@ -6,6 +6,7 @@ export interface ModelConfig {
   url: string;
   key: string;
   think?: boolean;
+  alias?: string;
 }
 
 interface TitleBarProps {
@@ -38,7 +39,8 @@ export default function TitleBar({
     setIsModelDropdownOpen(false);
   };
 
-  const currentModelName = models[selectedModelIndex]?.name || "No Model";
+  const currentModel = models[selectedModelIndex];
+  const currentModelDisplayName = currentModel?.alias || currentModel?.name || "No Model";
   const hasModels = models.length > 0;
 
   return (
@@ -70,7 +72,7 @@ export default function TitleBar({
               className="max-w-[120px] truncate text-right"
               style={{ direction: "rtl" }}
             >
-              {currentModelName}
+              {currentModelDisplayName}
             </span>
             {hasModels && (
               <ChevronDown
@@ -98,7 +100,7 @@ export default function TitleBar({
                       }`}
                     title={model.name}
                   >
-                    {model.name}
+                    {model.alias || model.name}
                   </button>
                 ))}
               </div>

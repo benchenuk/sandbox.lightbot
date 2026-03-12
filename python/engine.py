@@ -38,9 +38,11 @@ def write_toml(data: dict, file_path: Path) -> None:
                 for item in val:
                     lines.append(f"\n[[{full_name}]]")
                     for k, v in item.items():
-                        lines.append(f"{k} = {write_value(v)}")
+                        if v is not None:
+                            lines.append(f"{k} = {write_value(v)}")
             else:
-                lines.append(f"{key} = {write_value(val)}")
+                if val is not None:
+                    lines.append(f"{key} = {write_value(val)}")
 
     write_table(data)
 
@@ -200,6 +202,9 @@ class ChatEngine:
         self.think_param: str | None = (
             self.models[self.model_index].get("think_param", None) if self.models else None
         )
+        self.alias: str | None = (
+            self.models[self.model_index].get("alias", None) if self.models else None
+        )
 
         # Fast model configuration
         self.fast_model: str = (
@@ -254,8 +259,11 @@ class ChatEngine:
             logger.info(f"Models Configured: {len(self.models)}")
             for i, m in enumerate(self.models):
                 marker = "* " if i == self.model_index else "  "
+                name = m.get('name', 'unnamed')
+                alias = m.get('alias')
+                display_name = f"{alias} ({name})" if alias else name
                 logger.info(
-                    f"  {marker}{m.get('name', 'unnamed')} @ {m.get('url', 'no-url')}"
+                    f"  {marker}{display_name} @ {m.get('url', 'no-url')}"
                 )
         if self.fast_models:
             logger.info(f"Fast Models: {len(self.fast_models)}")
@@ -528,6 +536,7 @@ class ChatEngine:
                 self.api_key = self.models[self.model_index].get("key", "").strip()
                 self.think = self.models[self.model_index].get("think", None)
                 self.think_param = self.models[self.model_index].get("think_param", None)
+                self.alias = self.models[self.model_index].get("alias", None)
             reinitialize = True
 
         if "model_index" in settings:
@@ -540,6 +549,7 @@ class ChatEngine:
                 self.api_key = self.models[self.model_index].get("key", "").strip()
                 self.think = self.models[self.model_index].get("think", None)
                 self.think_param = self.models[self.model_index].get("think_param", None)
+                self.alias = self.models[self.model_index].get("alias", None)
                 reinitialize = True
 
         if "fast_models" in settings:
