@@ -25,4 +25,4 @@
 - [ ] Slider to set number of searches in settings 
 - [x] Allow scroll-back during chat output
 - [x] Search on tab
-- [ ] Obsidian export
+- [x] Obsidian export

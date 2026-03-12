@@ -602,14 +602,6 @@ class ChatEngine:
             self.clippings_path = settings["clippings_path"]
             config["settings"]["clippings_path"] = settings["clippings_path"]
 
-        if "show_thinking" in settings:
-            self.display_reasoning = settings["show_thinking"]
-            config["settings"]["display_reasoning"] = settings["show_thinking"]
-
-        if "display_reasoning" in settings:
-            self.retain_thinking = settings["display_reasoning"]
-            config["settings"]["retain_thinking"] = settings["display_reasoning"]
-
         if "retain_thinking" in settings:
             self.retain_thinking = settings["retain_thinking"]
             config["settings"]["retain_thinking"] = settings["retain_thinking"]
