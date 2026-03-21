@@ -20,18 +20,22 @@ interface ModelItemProps {
   model: ModelConfig;
   isExpanded: boolean;
   isSelected: boolean;
+  index: number;
   onToggle: () => void;
   onUpdate: (model: ModelConfig) => void;
   onDelete: () => void;
+  onActivate: (index: number) => void;
 }
 
 function ModelItem({
   model,
   isExpanded,
   isSelected,
+  index,
   onToggle,
   onUpdate,
   onDelete,
+  onActivate,
 }: ModelItemProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editModel, setEditModel] = useState<ModelConfig>(model);
@@ -132,7 +136,7 @@ function ModelItem({
             />
           </div>
 
-          <div className="pt-2 flex justify-end">
+          <div className="pt-2 flex justify-between">
             {!showDeleteConfirm ? (
               <button
                 onClick={handleDeleteClick}
@@ -156,6 +160,15 @@ function ModelItem({
                   Confirm
                 </button>
               </div>
+            )}
+            {!isSelected && !showDeleteConfirm && (
+              <button
+                onClick={() => onActivate(index)}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-accent hover:bg-accent/10 rounded transition-colors"
+              >
+                <Check size={12} />
+                Activate
+              </button>
             )}
           </div>
         </div>
@@ -226,11 +239,16 @@ export default function ModelConfigEditor({
     }
   };
 
+  const handleActivateModel = (index: number) => {
+    onModelsChange(models, index);
+  };
+
   const handleAddClick = () => {
     setIsAdding(true);
     setNewModel({ name: "", url: "", key: "" });
   };
 
+  // Note: This only updates local state. User must click "Save Settings" to persist to config file.
   const handleSaveNew = () => {
     if (!newModel.name.trim()) return; // Ignore empty names
     const newModels = [...models, newModel];
@@ -268,9 +286,11 @@ export default function ModelConfigEditor({
             model={model}
             isExpanded={expandedIndex === index}
             isSelected={index === selectedIndex}
+            index={index}
             onToggle={() => handleToggleExpand(index)}
             onUpdate={(updated) => handleUpdateModel(index, updated)}
             onDelete={() => handleDeleteModel(index)}
+            onActivate={handleActivateModel}
           />
         ))}
       </div>
