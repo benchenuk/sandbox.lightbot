@@ -60,13 +60,14 @@ QUERY = python async await tutorial
 CATEGORIES = it
 TIME_RANGE = year
 
+Provide the rewritten query and parameters.
+
 Conversation History:
 {chat_history}
 
 Current Query:
 {question}
 
-Provide the rewritten query and parameters.
 """
 
 

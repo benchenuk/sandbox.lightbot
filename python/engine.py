@@ -346,9 +346,6 @@ class ChatEngine:
             if standalone_query == message:
                 logger.info(f"[EVENT] Query not rewritten (using original)")
 
-            if params:
-                logger.info(f"[DEBUG] Rewrite params: {params}")
-
             return standalone_query, params
         except Exception as e:
             logger.error(f"Error rewriting query: {e}")
@@ -471,20 +468,22 @@ class ChatEngine:
 
         full_response = []
         logger.info("[EVENT] LLM API call started (streaming)")
-        stream = await self.llm.astream_chat(messages)
-        async for chunk in stream:
-            content = chunk.delta or ""
-            full_response.append(content)
-            yield content
-        logger.info("[EVENT] LLM API call completed (streaming)")
-
-        # Store in memory after streaming completes
-        full_content = "".join(full_response)
-        self._log_thinking_detected(full_content)
-        self._memory[sid].append(ChatMessage(role=MessageRole.USER, content=message))
-        self._memory[sid].append(
-            ChatMessage(role=MessageRole.ASSISTANT, content=full_content)
-        )
+        try:
+            stream = await self.llm.astream_chat(messages)
+            async for chunk in stream:
+                content = chunk.delta or ""
+                full_response.append(content)
+                yield content
+            logger.info("[EVENT] LLM API call completed (streaming)")
+        finally:
+            # Store in memory after streaming completes or is cancelled
+            full_content = "".join(full_response)
+            if full_content:
+                self._log_thinking_detected(full_content)
+                self._memory[sid].append(ChatMessage(role=MessageRole.USER, content=message))
+                self._memory[sid].append(
+                    ChatMessage(role=MessageRole.ASSISTANT, content=full_content)
+                )
 
     def clear_memory(self, session_id: str | None = None):
         """Clear chat memory for a session or all sessions."""
